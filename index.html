@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>FitQuest Prototype</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: Arial;
+      background: #111;
+      color: white;
+      text-align: center;
+    }
+
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #player {
+      width: 50px;
+      height: 50px;
+      background: lime;
+      position: absolute;
+      left: 100px;
+      top: 200px;
+    }
+
+    #enemy {
+      width: 50px;
+      height: 50px;
+      background: red;
+      position: absolute;
+      right: 100px;
+      top: 200px;
+    }
+
+    #enemyHP {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 150px;
+      height: 20px;
+      background: #555;
+    }
+
+    #hpBar {
+      width: 100%;
+      height: 100%;
+      background: red;
+    }
+
+    #info {
+      position: absolute;
+      bottom: 20px;
+      width: 100%;
+    }
+
+    button {
+      padding: 10px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>FitQuest Prototype</h2>
+
+<button onclick="startMotion()">Start Motion</button>
+
+<div id="game">
+  <div id="player"></div>
+  <div id="enemy"></div>
+
+  <div id="enemyHP">
+    <div id="hpBar"></div>
+  </div>
+
+  <div id="info">
+    Move phone = walk | Shake = attack
+  </div>
+</div>
+
+<script>
+let player = document.getElementById("player");
+let hpBar = document.getElementById("hpBar");
+
+let posX = 100;
+let speed = 0;
+
+let enemyHP = 100;
+let lastShake = 0;
+
+function startMotion() {
+  // iOS permission
+  if (typeof DeviceMotionEvent.requestPermission === "function") {
+    DeviceMotionEvent.requestPermission().then(response => {
+      if (response === "granted") {
+        enableMotion();
+      }
+    });
+  } else {
+    enableMotion();
+  }
+}
+
+function enableMotion() {
+  window.addEventListener("devicemotion", handleMotion);
+}
+
+function handleMotion(event) {
+  let acc = event.accelerationIncludingGravity;
+
+  if (!acc) return;
+
+  let x = acc.x || 0;
+  let y = acc.y || 0;
+  let z = acc.z || 0;
+
+  let force = Math.abs(x) + Math.abs(y) + Math.abs(z);
+
+  // Movement
+  if (force > 12) {
+    speed = Math.min(speed + 0.5, 5);
+  } else {
+    speed *= 0.9;
+  }
+
+  posX += speed;
+  player.style.left = posX + "px";
+
+  // Shake attack
+  let now = Date.now();
+  if (force > 25 && (now - lastShake > 1000)) {
+    lastShake = now;
+    attackEnemy();
+  }
+}
+
+function attackEnemy() {
+  enemyHP -= 10;
+  if (enemyHP < 0) enemyHP = 0;
+
+  hpBar.style.width = enemyHP + "%";
+
+  alert("💥 Attack! Enemy HP: " + enemyHP);
+}
+</script>
+
+</body>
+</html>
