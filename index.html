@@ -95,15 +95,20 @@ let speed = 0;
 let enemyHP = 100;
 let lastShake = 0;
 
-function startMotion() {
-  // iOS permission
-  if (typeof DeviceMotionEvent.requestPermission === "function") {
-    DeviceMotionEvent.requestPermission().then(response => {
-      if (response === "granted") {
+async function startMotion() {
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    try {
+      const response = await DeviceMotionEvent.requestPermission();
+      if (response === 'granted') {
         enableMotion();
+      } else {
+        alert("Permission denied. I need sensors to play!");
       }
-    });
+    } catch (e) {
+      console.error(e);
+    }
   } else {
+    // Non-iOS or older browsers
     enableMotion();
   }
 }
