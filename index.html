@@ -118,9 +118,13 @@ function enableMotion() {
 }
 
 function handleMotion(event) {
-  let acc = event.accelerationIncludingGravity;
+  // 1. Switch to 'acceleration' (this excludes gravity)
+  let acc = event.acceleration; 
 
-  if (!acc) return;
+  if (!acc || acc.x === null) {
+    // Fallback: If 'acceleration' isn't supported, use gravity but increase the threshold
+    acc = event.accelerationIncludingGravity;
+  }
 
   let x = acc.x || 0;
   let y = acc.y || 0;
@@ -128,8 +132,10 @@ function handleMotion(event) {
 
   let force = Math.abs(x) + Math.abs(y) + Math.abs(z);
 
-  // Movement
-  if (force > 12) {
+  // 2. Adjust your thresholds
+  // Without gravity, "12" is actually quite a hard move. 
+  // Try lowering this to 3 or 4 for walking.
+  if (force > 3) { 
     speed = Math.min(speed + 0.5, 5);
   } else {
     speed *= 0.9;
@@ -138,9 +144,10 @@ function handleMotion(event) {
   posX += speed;
   player.style.left = posX + "px";
 
-  // Shake attack
+  // 3. Shake threshold
+  // Without gravity, a shake is usually > 15
   let now = Date.now();
-  if (force > 25 && (now - lastShake > 1000)) {
+  if (force > 15 && (now - lastShake > 1000)) {
     lastShake = now;
     attackEnemy();
   }
