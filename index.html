@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FitQuest: Active RPG</title>
+  <title>FitQuest: Cardio Arena</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
   <style>
@@ -10,14 +10,14 @@
       --primary: #00ff66;
       --danger: #ff3333;
       --bg: #0d0e12;
-      --panel: rgba(22, 24, 33, 0.85);
+      --panel: rgba(22, 24, 33, 0.9);
     }
 
     * {
       box-sizing: border-box;
       user-select: none;
       -webkit-user-select: none;
-      touch-action: none;
+      touch-action: none; /* Disables drag-to-scroll viewport breaks */
     }
 
     body {
@@ -33,17 +33,18 @@
       position: relative;
       width: 100vw;
       height: 100vh;
-      background: radial-gradient(circle at center, #161821 0%, #0d0e12 100%);
+      background: radial-gradient(circle at center, #181b26 0%, #08090d 100%);
       overflow: hidden;
     }
 
+    /* Screen Block Overlays */
     #overlay {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(13, 14, 18, 0.95);
+      background: rgba(10, 11, 15, 0.98);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -57,46 +58,48 @@
       background: linear-gradient(135deg, var(--primary) 0%, #00b347 100%);
       border: none;
       color: #000;
-      padding: 15px 40px;
+      padding: 16px 45px;
       font-size: 1.2rem;
       font-weight: bold;
       border-radius: 30px;
       cursor: pointer;
-      box-shadow: 0 5px 15px rgba(0, 255, 102, 0.4);
+      box-shadow: 0 6px 20px rgba(0, 255, 102, 0.4);
     }
 
+    /* Rendering Nodes */
     .sprite {
       position: absolute;
       width: 60px;
       height: 60px;
-      border-radius: 12px;
-      will-change: transform, left, top;
+      border-radius: 14px;
+      will-change: left, top, transform;
     }
 
     #player {
-      background: linear-gradient(135deg, var(--primary) 0%, #00a3cc 100%);
-      box-shadow: 0 0 20px rgba(0, 255, 102, 0.5);
+      background: linear-gradient(135deg, var(--primary) 0%, #00bcff 100%);
+      box-shadow: 0 0 25px rgba(0, 255, 102, 0.6);
     }
 
     #enemy {
-      background: linear-gradient(135deg, var(--danger) 0%, #990000 100%);
-      box-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
+      background: linear-gradient(135deg, var(--danger) 0%, #800000 100%);
+      box-shadow: 0 0 25px rgba(255, 51, 51, 0.6);
     }
 
-    .attack-bounce { animation: attackMelee 0.25s ease-out; }
-    .damage-flash { animation: flashRed 0.15s ease-in-out 2; }
+    /* Structural Feedback Frames */
+    .attack-pulse { animation: hitPulse 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+    .hurt-flash { animation: redFlash 0.15s ease-in-out 2; }
 
-    @keyframes attackMelee {
+    @keyframes hitPulse {
       0% { transform: scale(1); }
-      50% { transform: scale(1.3); }
+      50% { transform: scale(1.4); }
       100% { transform: scale(1); }
     }
 
-    @keyframes flashRed {
-      0%, 100% { opacity: 1; filter: brightness(1); }
-      50% { opacity: 0.4; filter: brightness(2); }
+    @keyframes redFlash {
+      50% { opacity: 0.3; filter: brightness(2.5); }
     }
 
+    /* Interface Containers */
     #ui-layer {
       position: absolute;
       top: 0;
@@ -107,69 +110,68 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 20px;
+      padding: 25px;
       z-index: 10;
     }
 
-    .top-hud {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-    }
-
-    .health-container { width: 42%; }
-
-    .health-label {
+    .top-bar { display: flex; justify-content: space-between; width: 100%; }
+    .hp-housing { width: 40%; }
+    
+    .hp-label {
       font-size: 0.75rem;
       text-transform: uppercase;
-      margin-bottom: 5px;
-      color: #aaa;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      color: #8f94a6;
     }
 
-    .health-bar-outer {
+    .hp-track {
       width: 100%;
-      height: 14px;
-      background: #222;
-      border-radius: 7px;
+      height: 12px;
+      background: #1f222e;
+      border-radius: 6px;
       overflow: hidden;
     }
 
-    .health-bar-inner {
-      height: 100%;
-      width: 100%;
-      transition: width 0.15s ease-out;
-    }
+    .hp-fill { height: 100%; width: 100%; transition: width 0.15s ease-out; }
+    #p-fill { background: linear-gradient(90deg, #00ff66, #00bcff); }
+    #e-fill { background: linear-gradient(90deg, #ff3333, #ffaa00); }
 
-    #player-hp-fill { background: linear-gradient(90deg, #00ff66, #00bcff); }
-    #enemy-hp-fill { background: linear-gradient(90deg, #ff3333, #ff8800); }
-
-    .bottom-hud {
+    .control-deck {
       width: 100%;
-      text-align: center;
       background: var(--panel);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+      padding: 15px;
+      text-align: center;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
 
-    #combat-log {
-      height: 30px;
-      font-size: 1rem;
+    #status-msg {
+      font-size: 1.05rem;
       font-weight: bold;
       color: #00e5ff;
+      margin-bottom: 4px;
+      height: 24px;
     }
 
-    /* Steerable Directional Joystick */
-    #joystick-zone {
+    .exercise-metrics {
+      font-size: 0.8rem;
+      color: #6c7285;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Analog Directional Joystick Pad */
+    #joy-boundary {
       position: absolute;
-      bottom: 120px;
-      left: 40px;
-      width: 110px;
-      height: 110px;
-      background: rgba(255, 255, 255, 0.04);
-      border: 2px solid rgba(255, 255, 255, 0.15);
+      bottom: 140px;
+      left: 35px;
+      width: 120px;
+      height: 120px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 2px solid rgba(255, 255, 255, 0.12);
       border-radius: 50%;
       display: flex;
       justify-content: center;
@@ -177,23 +179,25 @@
       z-index: 20;
     }
 
-    #joystick-handle {
-      width: 45px;
-      height: 45px;
+    #joy-stick {
+      width: 48px;
+      height: 48px;
       background: rgba(255, 255, 255, 0.2);
-      border: 2px solid rgba(255, 255, 255, 0.6);
+      border: 2px solid rgba(255, 255, 255, 0.8);
       border-radius: 50%;
       pointer-events: none;
     }
 
-    #screen-log {
+    #telemetry-monitor {
       position: absolute;
-      top: 80px;
-      left: 20px;
+      top: 90px;
+      left: 25px;
       font-family: monospace;
       font-size: 0.75rem;
-      color: #444;
+      color: #4a4d59;
       pointer-events: none;
+      text-align: left;
+      line-height: 1.3;
     }
   </style>
 </head>
@@ -201,260 +205,289 @@
 
 <div id="game-container">
   <div id="overlay">
-    <h1 style="letter-spacing: 2px; color: var(--primary);">FitQuest</h1>
-    <p style="color: #8a8f9d; margin-bottom: 30px; max-width: 280px; font-size: 0.95rem;">
-      <b>Aim the controller</b> to choose your direction, then <b>move/walk in place</b> to run there! Shake your phone to strike!
+    <h1>FITQUEST ARENA</h1>
+    <p style="color: #7e8494; margin-bottom: 35px; max-width: 290px; font-size: 0.95rem; line-height: 1.5;">
+      Hold device and steer with the <b>Joystick</b>.<br><br>
+      <span style="color: var(--primary)">🏃 Run or walk in place to move!</span><br>
+      <span style="color: #00e5ff">⚔️ Shake fast to strike!</span>
     </p>
-    <button class="cta-btn" onclick="initializeGame()">START ENGINE</button>
+    <button class="cta-btn" onclick="igniteEngine()">START EXERCISE</button>
   </div>
 
-  <div id="screen-log"></div>
+  <div id="telemetry-monitor"></div>
 
   <div id="player" class="sprite"></div>
   <div id="enemy" class="sprite"></div>
 
-  <div id="joystick-zone">
-    <div id="joystick-handle"></div>
+  <div id="joy-boundary">
+    <div id="joy-stick"></div>
   </div>
 
   <div id="ui-layer">
-    <div class="top-hud">
-      <div class="health-container">
-        <div class="health-label">Hero HP</div>
-        <div class="health-bar-outer"><div id="player-hp-fill" class="health-bar-inner"></div></div>
+    <div class="top-bar">
+      <div class="hp-housing">
+        <div class="hp-label">Player Energy</div>
+        <div class="hp-track"><div id="p-fill" class="hp-fill"></div></div>
       </div>
-      <div class="health-container" style="text-align: right;">
-        <div class="health-label">Boss HP</div>
-        <div class="health-bar-outer"><div id="enemy-hp-fill" class="health-bar-inner"></div></div>
+      <div class="hp-housing" style="text-align: right;">
+        <div class="hp-label">Target Boss</div>
+        <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
       </div>
     </div>
 
-    <div class="bottom-hud">
-      <div id="combat-log">Steer & move to explore...</div>
+    <div class="control-deck">
+      <div id="status-msg">Standby...</div>
+      <div class="exercise-metrics" id="motion-display">Step Power: 0.00 | Engine Status: Idle</div>
     </div>
   </div>
 </div>
 
 <script>
-  const CONFIG = {
-    moveThreshold: 12.0,      // Accelerometer break limit to detect dynamic stepping/cycling
-    shakeThreshold: 24.0,     // High spike window to track a sword slash strike
-    attackCooldown: 500,
-    attackRange: 75,
-    maxSpeed: 7,
-    friction: 0.88,          // Natural glide-deceleration when physics motion stops
-    joystickRadius: 55
+  const SETTINGS = {
+    moveCutoff: 11.8,       // Base acceleration threshold to detect stepping/jogging
+    shakeCutoff: 23.5,      // Higher threshold spike for weapon attacks
+    combatWindow: 500,      // Weapon swing speed cooldown delay (ms)
+    hitBoxRange: 75,        // Pixels allowed between center coordinates for combat contact
+    frictionFactor: 0.88,   // Dynamic slide dampening engine speed roll-off
+    accelerationGain: 0.7,  // Velocity multiplier scale gained per step
+    velocityCap: 7.5,       // Absolute speed velocity roof limit
+    padRadius: 60           // Joystick tracking offset perimeter boundary
   };
 
-  let state = {
-    playerX: 0, playerY: 0,
-    enemyX: 0, enemyY: 0,
-    dirX: 0, dirY: 1,         // Direction vectors (Defaults facing rightwards)
-    playerVelocity: 0,        // Unified speed scale generated from physical movement
-    playerHP: 100, enemyHP: 100,
-    lastAttackTime: 0,
-    isGameOver: false,
-    joystickActive: false
+  let runtime = {
+    pX: 0, pY: 0,
+    eX: 0, eY: 0,
+    steerX: 0, steerY: 0,   // Controller structural angle outputs
+    currentSpeed: 0,        // Regulated purely by physical workout forces
+    pHP: 100, eHP: 100,
+    lastAttack: 0,
+    halted: false,
+    padActive: false
   };
 
-  const DOM = {
+  const UI = {
     overlay: document.getElementById('overlay'),
     player: document.getElementById('player'),
     enemy: document.getElementById('enemy'),
-    playerHPFill: document.getElementById('player-hp-fill'),
-    enemyHPFill: document.getElementById('enemy-hp-fill'),
-    combatLog: document.getElementById('combat-log'),
-    joystickZone: document.getElementById('joystick-zone'),
-    joystickHandle: document.getElementById('joystick-handle'),
-    debug: document.getElementById('screen-log')
+    pFill: document.getElementById('p-fill'),
+    eFill: document.getElementById('e-fill'),
+    status: document.getElementById('status-msg'),
+    motionInfo: document.getElementById('motion-display'),
+    padBoundary: document.getElementById('joy-boundary'),
+    padStick: document.getElementById('joy-stick'),
+    telemetry: document.getElementById('telemetry-monitor')
   };
 
-  function initializeGame() {
+  function igniteEngine() {
     if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
       DeviceMotionEvent.requestPermission()
-        .then(response => { setupEngine(); })
-        .catch(() => setupEngine());
+        .then(res => { setupEnvironment(); })
+        .catch(() => setupEnvironment());
     } else {
-      setupEngine();
+      setupEnvironment();
     }
   }
 
-  function setupEngine() {
-    DOM.overlay.style.display = 'none';
+  function setupEnvironment() {
+    UI.overlay.style.display = 'none';
     
-    // Position Spawn Setup
-    state.playerX = window.innerWidth * 0.2;
-    state.playerY = window.innerHeight * 0.5 - 30;
-    state.enemyX = window.innerWidth * 0.75;
-    state.enemyY = window.innerHeight * 0.5 - 30;
+    // Grid Layout Positioning Spawns
+    runtime.pX = window.innerWidth * 0.15;
+    runtime.pY = window.innerHeight / 2 - 30;
+    runtime.eX = window.innerWidth * 0.75;
+    runtime.eY = window.innerHeight / 2 - 30;
     
-    updateSpritePositions();
+    refreshViewportLayouts();
 
-    window.addEventListener('devicemotion', processMotion, false);
-    setupJoystick();
+    // Event Wire-up Connections
+    window.addEventListener('devicemotion', evaluateDeviceSensors, false);
+    buildJoystickControl();
     
-    // Keyboard Support Fallback for Desktop Dev Environment (WASD or Arrows)
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    // Cross-Platform Fallback Simulator Hooks
+    window.addEventListener('keydown', simulateHardwareDown);
+    window.addEventListener('keyup', simulateHardwareUp);
 
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(engineFrameTick);
   }
 
-  // Joystick Processing Setup
-  function setupJoystick() {
-    const zone = DOM.joystickZone;
-    const handle = DOM.joystickHandle;
-    const center = { x: CONFIG.joystickRadius, y: CONFIG.joystickRadius };
+  // Dual-Axis Controller System
+  function buildJoystickControl() {
+    const bound = UI.padBoundary;
+    const stick = UI.padStick;
 
-    function handleMove(e) {
-      if (!state.joystickActive) return;
-      let touch = e.touches ? e.touches[0] : e;
-      let rect = zone.getBoundingClientRect();
+    function trackInput(e) {
+      if (!runtime.padActive) return;
+      let targetTouch = e.touches ? e.touches[0] : e;
+      let geoBox = bound.getBoundingClientRect();
       
-      let deltaX = touch.clientX - (rect.left + center.x);
-      let deltaY = touch.clientY - (rect.top + center.y);
-      let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      
-      if (distance > 0) {
-        // Normalize the vector pointing path direction
-        state.dirX = deltaX / distance;
-        state.dirY = deltaY / distance;
+      let xOffset = targetTouch.clientX - (geoBox.left + SETTINGS.padRadius);
+      let yOffset = targetTouch.clientY - (geoBox.top + SETTINGS.padRadius);
+      let absoluteLength = Math.sqrt(xOffset * xOffset + yOffset * yOffset);
+
+      if (absoluteLength > SETTINGS.padRadius) {
+        xOffset = (xOffset / absoluteLength) * SETTINGS.padRadius;
+        yOffset = (yOffset / absoluteLength) * SETTINGS.padRadius;
       }
 
-      // Handle clamp aesthetics visually
-      if (distance > CONFIG.joystickRadius) {
-        deltaX = state.dirX * CONFIG.joystickRadius;
-        deltaY = state.dirY * CONFIG.joystickRadius;
-      }
+      stick.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
+      stick.style.borderColor = "var(--primary)";
 
-      handle.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-      handle.style.borderColor = "var(--primary)";
+      // Store normalized steering vectors (-1 to 1)
+      // This tells us *where* to go, but does NOT move the player alone.
+      runtime.steerX = xOffset / SETTINGS.padRadius;
+      runtime.steerY = yOffset / SETTINGS.padRadius;
+    }
+
+    function severInput() {
+      runtime.padActive = false;
+      stick.style.transform = `translate(0px, 0px)`;
+      stick.style.borderColor = "rgba(255, 255, 255, 0.8)";
+      runtime.steerX = 0;
+      runtime.steerY = 0;
+    }
+
+    bound.addEventListener('touchstart', (e) => { runtime.padActive = true; trackInput(e); }, {passive: false});
+    window.addEventListener('touchmove', trackInput, {passive: false});
+    window.addEventListener('touchend', severInput);
+
+    bound.addEventListener('mousedown', (e) => { runtime.padActive = true; trackInput(e); });
+    window.addEventListener('mousemove', trackInput);
+    window.addEventListener('mouseup', severInput);
+  }
+
+  // Physical Motion Extraction Engine
+  function evaluateDeviceSensors(event) {
+    if (runtime.halted) return;
+    let sensors = event.accelerationIncludingGravity;
+    if (!sensors) return;
+
+    let forceX = sensors.x || 0;
+    let forceY = sensors.y || 0;
+    let forceZ = sensors.z || 0;
+
+    // Euclidean Vector Magnitude representing physical motion output intensity
+    let totalMagnitude = Math.sqrt(forceX*forceX + forceY*forceY + forceZ*forceZ);
+
+    UI.telemetry.innerHTML = `ACCEL NET: ${totalMagnitude.toFixed(2)}G<br>X: ${forceX.toFixed(1)} | Y: ${forceY.toFixed(1)} | Z: ${forceZ.toFixed(1)}`;
+
+    // 1. Core Exercise Reader (The Gas Pedal)
+    // Running in place, jumping, or looping patterns breaks this line ceiling
+    if (totalMagnitude > SETTINGS.moveCutoff) {
+      // Add speed proportional to your physical movement intensity
+      let workYield = (totalMagnitude - SETTINGS.moveCutoff) * SETTINGS.accelerationGain;
+      runtime.currentSpeed = Math.min(runtime.currentSpeed + workYield, SETTINGS.velocityCap);
       
-      // Accessibility feature: holding joystick down completely also generates minor forward crawl speed
-      if (distance > 10) {
-        state.playerVelocity = Math.max(state.playerVelocity, (distance / CONFIG.joystickRadius) * 2);
-      }
+      UI.motionInfo.textContent = `Step Power: ${totalMagnitude.toFixed(1)} | Status: Moving!`;
+      UI.motionInfo.style.color = "var(--primary)";
     }
 
-    function handleEnd() {
-      state.joystickActive = false;
-      handle.style.transform = `translate(0px, 0px)`;
-      handle.style.borderColor = "rgba(255, 255, 255, 0.6)";
-    }
-
-    zone.addEventListener('touchstart', (e) => { state.joystickActive = true; handleMove(e); }, {passive: false});
-    window.addEventListener('touchmove', handleMove, {passive: false});
-    window.addEventListener('touchend', handleEnd);
-
-    zone.addEventListener('mousedown', (e) => { state.joystickActive = true; handleMove(e); });
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleEnd);
-  }
-
-  // Combined Motion tracking processor
-  function processMotion(event) {
-    if (state.isGameOver) return;
-    let acc = event.accelerationIncludingGravity;
-    if (!acc) return;
-
-    let totalForce = Math.sqrt((acc.x||0)**2 + (acc.y||0)**2 + (acc.z||0)**2);
-    DOM.debug.innerHTML = `PHYSICAL ENERGY SENSOR: ${totalForce.toFixed(2)}`;
-
-    // If body movement energy breaches threshold (User steps, spins, runs or circles in place)
-    if (totalForce > CONFIG.moveThreshold) {
-      // Inject energy velocity into whichever direction vector the controller is currently pointing
-      state.playerVelocity = Math.min(state.playerVelocity + 0.8, CONFIG.maxSpeed);
-    }
-
-    // Secondary threshold pipeline for executing attacks via structural device shaking
-    if (totalForce > CONFIG.shakeThreshold) {
-      attemptAttack();
+    // 2. Weapon Shake Attack Monitor
+    if (totalMagnitude > SETTINGS.shakeCutoff) {
+      processCombatStrike();
     }
   }
 
-  // Keyboard controls translation map for manual desktop test profiles
-  let keys = {};
-  function handleKeyDown(e) {
-    keys[e.code] = true;
-    let kX = (keys['KeyD'] || keys['ArrowRight'] ? 1 : 0) - (keys['KeyA'] || keys['ArrowLeft'] ? 1 : 0);
-    let kY = (keys['KeyS'] || keys['ArrowDown'] ? 1 : 0) - (keys['KeyW'] || keys['ArrowUp'] ? 1 : 0);
-    
-    if (kX !== 0 || kY !== 0) {
-      let len = Math.sqrt(kX*kX + kY*kY);
-      state.dirX = kX / len;
-      state.dirY = kY / len;
-      state.playerVelocity = Math.min(state.playerVelocity + 1.5, CONFIG.maxSpeed); // Simulate stepping input
+  // Keyboard Simulation Controls for Desktop Debug Testing
+  let testKeys = {};
+  function simulateHardwareDown(e) {
+    testKeys[e.code] = true;
+    if (e.code === 'ShiftLeft' || e.code === 'Space') {
+      // Simulate taking a physical step or exercise surge manually via Shift
+      runtime.currentSpeed = Math.min(runtime.currentSpeed + 2.5, SETTINGS.velocityCap);
     }
-    if (e.code === 'Space') attemptAttack();
+    if (e.code === 'KeyE') processCombatStrike(); // E simulates weapon shakes
+    mapSimulatedSteering();
   }
-  function handleKeyUp(e) { keys[e.code] = false; }
-
-  // Game Render and Calculations Logic Loop
-  function gameLoop() {
-    if (state.isGameOver) return;
-
-    // Apply friction to slow down cleanly when step input cuts out
-    state.playerVelocity *= CONFIG.friction;
-    if (state.playerVelocity < 0.05) state.playerVelocity = 0;
-
-    // Displace player coordinates using combined: [Velocity Scalar] x [Joystick Direction Angle Units]
-    state.playerX += state.dirX * state.playerVelocity;
-    state.playerY += state.dirY * state.playerVelocity;
-
-    // Canvas boundary safety collision calculations
-    state.playerX = Math.max(0, Math.min(window.innerWidth - 60, state.playerX));
-    state.playerY = Math.max(0, Math.min(window.innerHeight - 60, state.playerY));
-
-    updateSpritePositions();
-    requestAnimationFrame(gameLoop);
+  function simulateHardwareUp(e) {
+    testKeys[e.code] = false;
+    mapSimulatedSteering();
+  }
+  function mapSimulatedSteering() {
+    if (runtime.padActive) return;
+    runtime.steerX = (testKeys['KeyD'] || testKeys['ArrowRight'] ? 1 : 0) - (testKeys['KeyA'] || testKeys['ArrowLeft'] ? 1 : 0);
+    runtime.steerY = (testKeys['KeyS'] || testKeys['ArrowDown'] ? 1 : 0) - (testKeys['KeyW'] || testKeys['ArrowUp'] ? 1 : 0);
   }
 
-  function attemptAttack() {
-    if (state.isGameOver) return;
-    let now = Date.now();
-    if (now - state.lastAttackTime < CONFIG.attackCooldown) return;
-    state.lastAttackTime = now;
+  // Combat Evaluation Engine
+  function processCombatStrike() {
+    if (runtime.halted) return;
+    let timeStamp = Date.now();
+    if (timeStamp - runtime.lastAttack < SETTINGS.combatWindow) return;
+    runtime.lastAttack = timeStamp;
 
-    let dist = Math.sqrt(((state.enemyX+30) - (state.playerX+30))**2 + ((state.enemyY+30) - (state.playerY+30))**2);
+    // Core 2D Center Box Distance Checks
+    let distanceVector = Math.sqrt(
+      ((runtime.eX + 30) - (runtime.pX + 30))**2 + 
+      ((runtime.eY + 30) - (runtime.pY + 30))**2
+    );
 
-    if (dist <= CONFIG.attackRange + 40) {
-      DOM.player.classList.remove('attack-bounce');
-      void DOM.player.offsetWidth;
-      DOM.player.classList.add('attack-bounce');
-
-      state.enemyHP = Math.max(state.enemyHP - 20, 0);
-      DOM.enemyHPFill.style.width = `${state.enemyHP}%`;
-      
-      DOM.enemy.classList.remove('damage-flash');
-      void DOM.enemy.offsetWidth;
-      DOM.enemy.classList.add('damage-flash');
-
-      DOM.combatLog.textContent = `💥 Enemy Smashed! Boss Health: ${state.enemyHP}%`;
-      DOM.combatLog.style.color = "var(--primary)";
-
-      if (state.enemyHP <= 0) endGame();
+    if (distanceVector <= SETTINGS.hitBoxRange + 40) {
+      executeBossDamage();
     } else {
-      DOM.combatLog.textContent = "❌ Out of range! Point stick at boss and run closer.";
-      DOM.combatLog.style.color = "#ffaa00";
+      UI.status.textContent = "❌ Out of range! Move closer while jogging!";
+      UI.status.style.color = "#ffaa00";
     }
   }
 
-  function updateSpritePositions() {
-    DOM.player.style.left = `${state.playerX}px`;
-    DOM.player.style.top = `${state.playerY}px`;
-    DOM.enemy.style.left = `${state.enemyX}px`;
-    DOM.enemy.style.top = `${state.enemyY}px`;
+  function executeBossDamage() {
+    UI.player.classList.remove('attack-pulse');
+    void UI.player.offsetWidth;
+    UI.player.classList.add('attack-pulse');
+
+    runtime.eHP = Math.max(runtime.eHP - 20, 0);
+    UI.eFill.style.width = `${runtime.eHP}%`;
+
+    UI.enemy.classList.remove('hurt-flash');
+    void UI.enemy.offsetWidth;
+    UI.enemy.classList.add('hurt-flash');
+
+    UI.status.textContent = `💥 Boss Damaged! HP: ${runtime.eHP}%`;
+    UI.status.style.color = "var(--primary)";
+
+    if (runtime.eHP <= 0) breakArenaQuest();
   }
 
-  function endGame() {
-    state.isGameOver = true;
-    DOM.combatLog.textContent = "🏆 DUNGEON CLEAR!";
+  // Continuous Frame Physics Processor Loop
+  function engineFrameTick() {
+    if (runtime.halted) return;
+
+    // Apply continuous friction decay. If user stops exercising, speed drops back to 0.
+    runtime.currentSpeed *= SETTINGS.frictionFactor;
+    if (runtime.currentSpeed < 0.05) {
+      runtime.currentSpeed = 0;
+      UI.motionInfo.textContent = "Step Power: 0.00 | Status: Idle (Exercise to move)";
+      UI.motionInfo.style.color = "#6c7285";
+    }
+
+    // Multiply the directional steering layout values by the physical exercise speed pool
+    runtime.pX += runtime.steerX * runtime.currentSpeed;
+    runtime.pY += runtime.steerY * runtime.currentSpeed;
+
+    // Bound constraints mapping borders
+    runtime.pX = Math.max(0, Math.min(window.innerWidth - 60, runtime.pX));
+    runtime.pY = Math.max(0, Math.min(window.innerHeight - 60, runtime.pY));
+
+    refreshViewportLayouts();
+    requestAnimationFrame(engineFrameTick);
+  }
+
+  function refreshViewportLayouts() {
+    UI.player.style.left = `${runtime.pX}px`;
+    UI.player.style.top = `${runtime.pY}px`;
+    UI.enemy.style.left = `${runtime.eX}px`;
+    UI.enemy.style.top = `${runtime.eY}px`;
+  }
+
+  function breakArenaQuest() {
+    runtime.halted = true;
+    UI.status.textContent = "🏆 QUEST COMPLETED!";
     setTimeout(() => {
-      DOM.overlay.innerHTML = `
-        <h1 style="color: var(--primary)">QUEST CLEAR!</h1>
-        <button class="cta-btn" onclick="window.location.reload()">PLAY AGAIN</button>
+      UI.overlay.innerHTML = `
+        <h1 style="color: var(--primary)">WORKOUT COMPLETE</h1>
+        <p style="color: #aaa; margin-bottom: 25px;">Boss cleared successfully.</p>
+        <button class="cta-btn" onclick="window.location.reload()">START NEW LAP</button>
       `;
-      DOM.overlay.style.display = 'flex';
+      UI.overlay.style.display = 'flex';
     }, 1200);
   }
 </script>
