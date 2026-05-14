@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FitQuest: Core Fitness Engine</title>
+  <title>FitQuest: Arena Battle</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 
   <style>
@@ -11,7 +11,7 @@
       --danger: #ff3333;
       --bg: #090a0f;
       --panel: rgba(18, 20, 28, 0.9);
-      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     }
 
     * {
@@ -69,7 +69,7 @@
       text-transform: uppercase;
     }
 
-    /* Entities Layout (Transform Render Locked) */
+    /* Entities Layout */
     .sprite {
       position: absolute;
       width: 64px;
@@ -88,6 +88,19 @@
     #enemy {
       background: linear-gradient(135deg, var(--danger) 0%, #730000 100%);
       box-shadow: 0 0 30px rgba(255, 51, 51, 0.5);
+    }
+
+    /* Projectiles */
+    .projectile {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: #ffaa00;
+      border-radius: 50%;
+      box-shadow: 0 0 15px #ff3333;
+      left: 0;
+      top: 0;
+      will-change: transform;
     }
 
     /* Combat Animations Matrix */
@@ -194,7 +207,6 @@
       pointer-events: none;
     }
 
-    /* Production Diagnostics Board */
     #monitor-panel {
       position: absolute;
       top: 90px;
@@ -216,7 +228,7 @@
     <p style="color: #798092; margin-bottom: 35px; max-width: 300px; font-size: 0.95rem; line-height: 1.6;">
       Aim with the <b>Joystick</b>.<br>
       <span style="color: #fff; font-weight: 600;">Step or Jog in place to generate speed.</span><br>
-      Shake your phone firmly to attack the Boss.
+      The Boss is stationary but fires back! Avoid projectiles and shake to attack.
     </p>
     <button class="cta-btn" onclick="requestHardwarePermissions()">Start Session</button>
   </div>
@@ -233,11 +245,11 @@
   <div id="ui-layer">
     <div class="top-hud">
       <div class="hud-card">
-        <div class="bar-label">User Vitals</div>
+        <div class="bar-label">Your Vitals</div>
         <div class="bar-track"><div id="p-hp-fill" class="bar-fill"></div></div>
       </div>
       <div class="hud-card" style="text-align: right;">
-        <div class="bar-label">Goliath Engine AI</div>
+        <div class="bar-label">Stationary Boss</div>
         <div class="bar-track"><div id="e-hp-fill" class="bar-fill"></div></div>
       </div>
     </div>
@@ -250,59 +262,47 @@
 </div>
 
 <script>
-  /**
-   * CORE ENGINE CONFIGURATION MATRIX
-   */
   const ENGINE_CONFIG = {
-    // Noise Reduction Filters
-    lowPassFilterFactor: 0.18,   // High-frequency signal attenuation factor (0.18 = clean signal tracking)
-    motionStepFloor: 1.6,       // Dynamic localized G-force ceiling threshold required to count as physical work
-    combatShakeFloor: 14.5,     // Delta speed value jump needed to clear weapon execution thresholds
-    attackInterval: 450,        // Absolute system cooldown protection buffer for actions (ms)
+    lowPassFilterFactor: 0.18,   
+    motionStepFloor: 1.6,       
+    combatShakeFloor: 14.5,     
+    attackInterval: 450,        
     
-    // Core Delta Physics
-    momentumDecay: 4.8,         // Linear exponential drag coefficient drop factor ($m/s^2$)
-    kineticInputGain: 12.5,     // Total power output generated per structural step impulse
-    velocityCeiling: 320.0,     // Pixel units per second translation roof speed
-    combatContactZone: 85.0,    // Total absolute distance radius tracking for damage interactions
-    joystickRadius: 55,         // Bound limits of thumb control tracking element
-    
-    // AI Target Matrix
-    aiWanderSpeed: 85.0,        // AI movement scalar tracking factor (pixels per second)
-    aiChangeDirWindow: 1800     // Interval before the enemy pathfinder chooses a new vector target (ms)
+    momentumDecay: 4.8,         
+    kineticInputGain: 12.5,     
+    velocityCeiling: 320.0,     
+    combatContactZone: 90.0,    
+    joystickRadius: 55,
+
+    // Projectile Balancing Systems
+    bossAttackCooldown: 2200,   // Fireball frequency rate (ms)
+    fireballSpeed: 210.0         // Velocity pixels per second
   };
 
-  /**
-   * SYSTEM RUNTIME REGISTER
-   */
   let runtime = {
-    // Entity Transform States
     pX: 0, pY: 0,
     eX: 0, eY: 0,
-    pVx: 0, pVy: 0,             // Clean velocity channels
-    eTargetX: 0, eTargetY: 0,   // AI target tracking points
-    aiTimer: 0,
-    
-    // Engine State Checks
+    pVx: 0, pVy: 0,             
     lastFrameTime: 0,
     isHalted: false,
     joystickTracking: false,
-    isDesktopFallback: false,    // Safe tracking check if desktop environment overrides are running
+    isDesktopFallback: false,    
     
-    // Normalized Input Vector Arrays
     aimVectorX: 0, aimVectorY: 0,
     
-    // Signal Filtering Sub-Registers
     smoothedX: 0, smoothedY: 0, smoothedZ: 0,
     lastStepTimestamp: 0,
-    cadenceFrequency: 0.0,      // Measured step activity output
+    cadenceFrequency: 0.0,      
     
-    // Vitals Register
     pHero: 100, eBoss: 100,
-    lastCombatExecution: 0
+    lastCombatExecution: 0,
+    lastBossAttackTime: 0,
+    
+    projectiles: [] // Active bullets tracking stack array
   };
 
   const DOM = {
+    container: document.getElementById('game-container'),
     overlay: document.getElementById('overlay'),
     player: document.getElementById('player'),
     enemy: document.getElementById('enemy'),
@@ -315,22 +315,15 @@
     diagnostic: document.getElementById('monitor-panel')
   };
 
-  /**
-   * SECURITY & HARDWARE INITIALIZATION
-   */
   function requestHardwarePermissions() {
     if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
       DeviceMotionEvent.requestPermission()
         .then(permissionState => {
-          if (permissionState === 'granted') {
-            bootEngineCore();
-          } else {
-            fallbackToSimulatorMode("Sensor permission denied.");
-          }
+          if (permissionState === 'granted') bootEngineCore();
+          else fallbackToSimulatorMode("Sensor permission denied.");
         })
         .catch(() => fallbackToSimulatorMode("Sensor handshake error."));
     } else {
-      // Automatic detection check for environments missing physical mobile acceleration sensors
       if (navigator.userAgent.match(/Android|iPhone|iPad|iPod/i)) {
         fallbackToSimulatorMode("Sensors missing on device hardware configuration.");
       } else {
@@ -341,7 +334,6 @@
   }
 
   function fallbackToSimulatorMode(reason) {
-    console.warn(`System redirecting: ${reason}`);
     runtime.isDesktopFallback = true;
     bootEngineCore();
   }
@@ -349,16 +341,12 @@
   function bootEngineCore() {
     DOM.overlay.style.display = 'none';
     
-    // Map initial screen geometry points
-    runtime.pX = window.innerWidth * 0.2;
+    // Fixed layout mapping positions (Boss locked completely to the center right)
+    runtime.pX = window.innerWidth * 0.15;
     runtime.pY = window.innerHeight * 0.5 - 32;
-    runtime.eX = window.innerWidth * 0.7;
+    runtime.eX = window.innerWidth - 120;
     runtime.eY = window.innerHeight * 0.5 - 32;
     
-    runtime.eTargetX = runtime.eX;
-    runtime.eTargetY = runtime.eY;
-
-    // Attach Hardware Level Interrupt Listeners
     if (!runtime.isDesktopFallback) {
       window.addEventListener('devicemotion', processSensorSignal, { passive: false });
     } else {
@@ -367,49 +355,37 @@
     
     bindJoystickInterface();
     
-    // Run core engine clock frame loop
     runtime.lastFrameTime = performance.now();
+    runtime.lastBossAttackTime = performance.now();
     requestAnimationFrame(gameEngineTick);
   }
 
-  /**
-   * SIGNAL PROCESSING & MOTION ISOLATION FILTER (LOW-PASS SENSOR FUSION)
-   */
   function processSensorSignal(event) {
     if (runtime.isHalted) return;
     
-    let rawAccel = event.acceleration; // Pull coordinate maps isolated from planetary gravity
+    let rawAccel = event.acceleration; 
     if (!rawAccel || rawAccel.x === null) {
-      rawAccel = event.accelerationIncludingGravity; // Secondary tracking register interface
+      rawAccel = event.accelerationIncludingGravity; 
       if (!rawAccel) return;
     }
 
     let alpha = ENGINE_CONFIG.lowPassFilterFactor;
-    
-    // Apply low pass filtering to eliminate tiny desk/hand trembles
     runtime.smoothedX = runtime.smoothedX + alpha * ((rawAccel.x || 0) - runtime.smoothedX);
     runtime.smoothedY = runtime.smoothedY + alpha * ((rawAccel.y || 0) - runtime.smoothedY);
     runtime.smoothedZ = runtime.smoothedZ + alpha * ((rawAccel.z || 0) - runtime.smoothedZ);
 
-    // Dynamic Net Vector calculation
     let currentNetMagnitude = Math.sqrt(runtime.smoothedX**2 + runtime.smoothedY**2 + runtime.smoothedZ**2);
-    
-    // Track localized raw change differences to avoid false trigger spikes
     let rawJerkDelta = Math.abs(currentNetMagnitude - (runtime.lastCalculatedMag || 0));
     runtime.lastCalculatedMag = currentNetMagnitude;
 
     DOM.diagnostic.innerHTML = `RAW MAG: ${currentNetMagnitude.toFixed(2)}G<br>JERK DELTA: ${rawJerkDelta.toFixed(2)}<br>MODE: MOBILE HARDWARE`;
 
-    // 1. Core Step Impulse Engine Tracker
     if (currentNetMagnitude > ENGINE_CONFIG.motionStepFloor) {
       let currentTime = performance.now();
       let stepTimeDelta = currentTime - runtime.lastStepTimestamp;
 
-      // Limit step checks to human physical cadences (250ms to 2000ms thresholds)
       if (stepTimeDelta > 250 && stepTimeDelta < 2000) {
-        runtime.cadenceFrequency = 1000 / stepTimeDelta; // Calculate frequency in Hz
-        
-        // Feed energy directly into the velocity registers relative to directional aiming vectors
+        runtime.cadenceFrequency = 1000 / stepTimeDelta; 
         let propulsionPower = ENGINE_CONFIG.kineticInputGain * (currentNetMagnitude);
         runtime.pVx += runtime.aimVectorX * propulsionPower;
         runtime.pVy += runtime.aimVectorY * propulsionPower;
@@ -417,15 +393,11 @@
       runtime.lastStepTimestamp = currentTime;
     }
 
-    // 2. Weapon Shake Attack Engine Tracker
     if (rawJerkDelta > ENGINE_CONFIG.combatShakeFloor) {
       evaluateCombatInteraction();
     }
   }
 
-  /**
-   * JOYSTICK CONTROL PACK SYSTEM
-   */
   function bindJoystickInterface() {
     const boundaryNode = DOM.joyZone;
     const knobNode = DOM.joyKnob;
@@ -449,7 +421,6 @@
       knobNode.style.transform = `translate3d(${dX}px, ${dY}px, 0px)`;
       knobNode.style.borderColor = "var(--primary)";
 
-      // Store mathematically normalized aim direction vector coordinates
       runtime.aimVectorX = hypotenuseLength > 0 ? dX / r : 0;
       runtime.aimVectorY = hypotenuseLength > 0 ? dY / r : 0;
     }
@@ -471,9 +442,6 @@
     window.addEventListener('mouseup', breakTracking);
   }
 
-  /**
-   * DESKTOP SIMULATOR & SECURITY CHECK CHEAT MECHANICS
-   */
   let virtualKeyArray = {};
   function setupDesktopSimulatorHooks() {
     window.addEventListener('keydown', (e) => { 
@@ -492,7 +460,6 @@
     runtime.aimVectorX = (virtualKeyArray['KeyD'] || virtualKeyArray['ArrowRight'] ? 1 : 0) - (virtualKeyArray['KeyA'] || virtualKeyArray['ArrowLeft'] ? 1 : 0);
     runtime.aimVectorY = (virtualKeyArray['KeyS'] || virtualKeyArray['ArrowDown'] ? 1 : 0) - (virtualKeyArray['KeyW'] || virtualKeyArray['ArrowUp'] ? 1 : 0);
     
-    // Normalize basic diagonal keyboard vectors to limit running speed exploits
     if (runtime.aimVectorX !== 0 && runtime.aimVectorY !== 0) {
       runtime.aimVectorX *= 0.7071;
       runtime.aimVectorY *= 0.7071;
@@ -500,7 +467,6 @@
   }
 
   function processDesktopSimulatedPhysics(dt) {
-    // If running on desktop emulation, simulate step pacing when movement vectors are pushed
     if (runtime.aimVectorX !== 0 || runtime.aimVectorY !== 0) {
       runtime.cadenceFrequency = 1.85;
       let simulatedEnergyUnit = 90.0 * dt;
@@ -512,9 +478,6 @@
     DOM.diagnostic.innerHTML = `MODE: DEV SIMULATOR DETECTED<br>WASD/ARROWS = STEER & RUN<br>SPACEBAR = COMBAT SHAKE`;
   }
 
-  /**
-   * COMBAT PROCESSING ENGINE
-   */
   function evaluateCombatInteraction() {
     if (runtime.isHalted) return;
     let clockTicks = performance.now();
@@ -522,146 +485,8 @@
     if (clockTicks - runtime.lastCombatExecution < ENGINE_CONFIG.attackInterval) return;
     runtime.lastCombatExecution = clockTicks;
 
-    // Direct Euclidean distance checking between the center of bounding volumes
     let distanceToTarget = Math.sqrt(((runtime.eX + 32) - (runtime.pX + 32))**2 + ((runtime.eY + 32) - (runtime.pY + 32))**2);
 
     if (distanceToTarget <= ENGINE_CONFIG.combatContactZone) {
       executeValidatedMeleeStrike();
-    } else {
-      DOM.feed.textContent = "❌ Too far away! Jog into striking range!";
-      DOM.feed.style.color = "#ffaa00";
     }
-  }
-
-  function executeValidatedMeleeStrike() {
-    // Inject CSS combat transform keyframes
-    DOM.player.classList.remove('melee-strike');
-    void DOM.player.offsetWidth; 
-    DOM.player.classList.add('melee-strike');
-
-    runtime.eBoss = Math.max(runtime.eBoss - 20, 0);
-    DOM.eHP.style.width = `${runtime.eBoss}%`;
-
-    DOM.enemy.classList.remove('take-damage');
-    void DOM.enemy.offsetWidth;
-    DOM.enemy.classList.add('take-damage');
-
-    DOM.feed.textContent = `💥 Direct Hit! Target HP down to ${runtime.eBoss}%`;
-    DOM.feed.style.color = "var(--primary)";
-
-    if (runtime.eBoss <= 0) declareDungeonClearState();
-  }
-
-  /**
-   * PRO FRAME TICK DATA CHANNEL (DELTA PHYSICS PIPELINE)
-   */
-  function gameEngineTick(currentFrameTimestamp) {
-    if (runtime.isHalted) return;
-
-    // Calculate dynamic time step window fraction ($dt$ in seconds)
-    let deltaTime = (currentFrameTimestamp - runtime.lastFrameTime) / 1000;
-    runtime.lastFrameTime = currentFrameTimestamp;
-
-    // Safety clamp to prevent huge physics jumps on background app tab suspension sleep
-    if (deltaTime > 0.15) deltaTime = 0.15;
-
-    // Run Desktop Simulation Fallback Physics if needed
-    if (runtime.isDesktopFallback) {
-      processDesktopSimulatedPhysics(deltaTime);
-    }
-
-    // 1. Process Exponential Drag Coefficient Physics
-    let absoluteVelocityMagnitude = Math.sqrt(runtime.pVx**2 + runtime.pVy**2);
-    if (absoluteVelocityMagnitude > 0) {
-      let dragReductionUnit = ENGINE_CONFIG.momentumDecay * deltaTime;
-      
-      if (absoluteVelocityMagnitude <= dragReductionUnit) {
-        runtime.pVx = 0;
-        runtime.pVy = 0;
-      } else {
-        runtime.pVx -= (runtime.pVx / absoluteVelocityMagnitude) * dragReductionUnit * absoluteVelocityMagnitude;
-        runtime.pVy -= (runtime.pVy / absoluteVelocityMagnitude) * dragReductionUnit * absoluteVelocityMagnitude;
-      }
-    }
-
-    // 2. Velocity Clamping Bounds Enforcements
-    let currentSpeedMetric = Math.sqrt(runtime.pVx**2 + runtime.pVy**2);
-    if (currentSpeedMetric > ENGINE_CONFIG.velocityCeiling) {
-      runtime.pVx = (runtime.pVx / currentSpeedMetric) * ENGINE_CONFIG.velocityCeiling;
-      runtime.pVy = (runtime.pVy / currentSpeedMetric) * ENGINE_CONFIG.velocityCeiling;
-    }
-
-    // 3. Update Spatial Transform Matrix Coordinates
-    runtime.pX += runtime.pVx * deltaTime;
-    runtime.pY += runtime.pVy * deltaTime;
-
-    // 4. Solid Screen Boundaries Crash Protection Constraints
-    runtime.pX = Math.max(0, Math.min(window.innerWidth - 64, runtime.pX));
-    runtime.pY = Math.max(0, Math.min(window.innerHeight - 64, runtime.pY));
-
-    // 5. Execute Pathfinder AI Wandering Track
-    processEnemyPathfinderAI(deltaTime);
-
-    // 6. Direct DOM Paint Interface
-    DOM.player.style.transform = `translate3d(${runtime.pX}px, ${runtime.pY}px, 0px)`;
-    DOM.enemy.style.transform = `translate3d(${runtime.eX}px, ${runtime.eY}px, 0px)`;
-
-    // Update real-time cadence HUD displays
-    refreshHUDLogs();
-
-    requestAnimationFrame(gameEngineTick);
-  }
-
-  /**
-   * RANDOMIZED WANDER AI PATHFINDING ENGINE
-   */
-  function processEnemyPathfinderAI(dt) {
-    runtime.aiTimer += dt * 1000;
-    
-    // Choose a new random coordinate node targets once each window cycle clears
-    if (runtime.aiTimer >= ENGINE_CONFIG.aiChangeDirWindow) {
-      runtime.aiTimer = 0;
-      runtime.eTargetX = Math.random() * (window.innerWidth - 150) + 70;
-      runtime.eTargetY = Math.random() * (window.innerHeight - 150) + 70;
-    }
-
-    // Linearly slide vector paths toward current destination coordinates
-    let deltaVecX = runtime.eTargetX - runtime.eX;
-    let deltaVecY = runtime.eTargetY - runtime.eY;
-    let directionalDistance = Math.sqrt(deltaVecX*deltaVecX + deltaVecY*deltaVecY);
-
-    if (directionalDistance > 5) {
-      runtime.eX += (deltaVecX / directionalDistance) * ENGINE_CONFIG.aiWanderSpeed * dt;
-      runtime.eY += (deltaVecY / directionalDistance) * ENGINE_CONFIG.aiWanderSpeed * dt;
-    }
-  }
-
-  function refreshHUDLogs() {
-    let scalarSpeedRepresentation = Math.sqrt(runtime.pVx**2 + runtime.pVy**2);
-    if (scalarSpeedRepresentation > 5) {
-      DOM.metrics.textContent = `Cadence Vector: ${runtime.cadenceFrequency.toFixed(1)} Hz | Velocity: ${Math.round(scalarSpeedRepresentation)} px/s`;
-      DOM.metrics.style.color = "var(--primary)";
-    } else {
-      DOM.metrics.textContent = `Cadence Vector: 0.00 Hz | Output: Idle (Step to Move)`;
-      DOM.metrics.style.color = "#696f7d";
-    }
-  }
-
-  function declareDungeonClearState() {
-    runtime.isHalted = true;
-    DOM.feed.textContent = "🏆 GOAL OBTAINED!";
-    DOM.feed.style.color = "var(--primary)";
-    
-    setTimeout(() => {
-      DOM.overlay.innerHTML = `
-        <h1 style="color: var(--primary); letter-spacing: 2px;">SESSION COMPLETED</h1>
-        <p style="color: #8e95a5; margin-bottom: 25px; font-size:0.95rem;">Cardio challenge targets hit successfully.</p>
-        <button class="cta-btn" onclick="window.location.reload()">Start Next Lap</button>
-      `;
-      DOM.overlay.style.display = 'flex';
-    }, 1200);
-  }
-</script>
-
-</body>
-</html>
