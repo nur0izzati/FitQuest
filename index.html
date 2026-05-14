@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FitQuest: Kinetic Overdrive</title>
+  <title>FitQuest: Kinetic Overdrive Pro</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 
   <style>
@@ -81,11 +81,13 @@
     #player {
       background: linear-gradient(135deg, var(--primary) 0%, #00bcff 100%);
       box-shadow: 0 0 30px rgba(0, 255, 102, 0.5);
+      transform: translate3d(0,0,0);
     }
 
     #enemy {
       background: linear-gradient(135deg, var(--danger) 0%, #730000 100%);
       box-shadow: 0 0 30px rgba(255, 51, 51, 0.5);
+      transform: translate3d(0,0,0);
     }
 
     .projectile {
@@ -101,16 +103,20 @@
     }
 
     .melee-strike { animation: meleeMotion 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-    .take-damage { animation: damageFlash 0.12s ease-in-out 3; }
+    
+    /* Optimized hardware damage flash layout that cannot lock input streams */
+    .take-damage { animation: damageFlash 0.1s linear 3; }
 
     @keyframes meleeMotion {
-      0% { transform: scale(1) translate(0, 0); }
-      40% { transform: scale(1.3) translate(20px, -5px); filter: brightness(1.4); }
-      100% { transform: scale(1) translate(0, 0); }
+      0% { transform: scale(1) translate3d(0,0,0); }
+      40% { transform: scale(1.25) translate3d(15px, -5px, 0); filter: brightness(1.4); }
+      100% { transform: scale(1) translate3d(0,0,0); }
     }
 
     @keyframes damageFlash {
-      50% { opacity: 0.2; transform: scale(0.85); filter: saturate(2) brightness(3); }
+      0% { opacity: 1.0; filter: brightness(1); }
+      50% { opacity: 0.4; filter: brightness(2.5) saturate(2); }
+      100% { opacity: 1.0; filter: brightness(1); }
     }
 
     #ui-layer {
@@ -183,20 +189,20 @@
       left: 40px;
       width: 110px;
       height: 110px;
-      background: rgba(255, 255, 255, 0.02);
-      border: 2px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+      border: 2px solid rgba(255, 255, 255, 0.12);
       border-radius: 50%;
       display: flex;
       justify-content: center;
       align-items: center;
-      z-index: 20;
+      z-index: 50; /* Raised layer map priority to ensure it can never be covered or locked out */
     }
 
     #joy-knob {
       width: 44px;
       height: 44px;
-      background: rgba(255, 255, 255, 0.15);
-      border: 2px solid rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.8);
       border-radius: 50%;
       pointer-events: none;
     }
@@ -218,11 +224,11 @@
 
 <div id="game-container">
   <div id="overlay" class="screen-overlay">
-    <h1 style="font-size: 2.2rem; letter-spacing: 3px; margin: 0 0 10px 0; color: var(--primary);">KINETIC OVERDRIVE</h1>
+    <h1 style="font-size: 2.2rem; letter-spacing: 3px; margin: 0 0 10px 0; color: var(--primary);">KINETIC OVERDRIVE V2</h1>
     <p style="color: #798092; margin-bottom: 35px; max-width: 320px; font-size: 0.95rem; line-height: 1.6;">
       Hold device and steer with the <b>Joystick</b>.<br><br>
-      <span style="color: #fff; font-weight: 600;">🕹️ Joystick alone moves you normally.</span><br>
-      <span style="color: var(--primary); font-weight: 600;">🏃 Run FASTER in place to hyper-boost speed!</span>
+      <span style="color: #fff; font-weight: 600;">🕹️ Joystick alone moves you smoothly.</span><br>
+      <span style="color: var(--primary); font-weight: 600;">🏃 Jog or walk in place to get turbo speed!</span>
     </p>
     <button class="cta-btn" onclick="requestHardwarePermissions()">Start Fight</button>
   </div>
@@ -249,7 +255,7 @@
     </div>
 
     <div class="bottom-deck">
-      <div id="combat-feed">Ready...</div>
+      <div id="combat-feed">System Online</div>
       <div class="telemetry-subtext" id="engine-status">Speed Output: 0 px/s</div>
     </div>
   </div>
@@ -258,19 +264,19 @@
 <script>
   const ENGINE_CONFIG = {
     lowPassFilterFactor: 0.22,   
-    motionStepFloor: 1.4,       
+    motionStepFloor: 1.3,       
     combatShakeFloor: 15.0,     
     attackInterval: 400,        
     
-    momentumDecay: 6.5,         // Responsive snappy braking framework
-    kineticInputGain: 34.0,     // MASSIVE increase to acceleration conversion from active movement
-    velocityCeiling: 620.0,     // Raised speed limit to allow hyper dodging
-    baseJoystickSpeed: 140.0,   // Baseline motor speed from joystick alone
+    momentumDecay: 7.0,         
+    kineticInputGain: 36.0,     
+    velocityCeiling: 650.0,     
+    baseJoystickSpeed: 160.0,   // Responsive baseline speed values
     combatContactZone: 95.0,    
     joystickRadius: 55,
 
-    bossAttackCooldown: 2000,   
-    fireballSpeed: 230.0        
+    bossAttackCooldown: 1900,   
+    fireballSpeed: 240.0        
   };
 
   let runtime = {
@@ -286,7 +292,7 @@
     
     smoothedX: 0, smoothedY: 0, smoothedZ: 0,
     lastStepTimestamp: 0,
-    workoutBoostVel: 0,         // Scaled speed generated exclusively from physical movement
+    workoutBoostVel: 0,         
     
     pHero: 100, eBoss: 100,
     lastCombatExecution: 0,
@@ -371,13 +377,10 @@
     let rawJerkDelta = Math.abs(currentNetMagnitude - (runtime.lastCalculatedMag || 0));
     runtime.lastCalculatedMag = currentNetMagnitude;
 
-    DOM.diagnostic.innerHTML = `BODY MOTION INTENSITY: ${currentNetMagnitude.toFixed(2)}G<br>SHAKE JERK: ${rawJerkDelta.toFixed(2)}<br>MODE: MOBILE DRIVE`;
+    DOM.diagnostic.innerHTML = `BODY EXP: ${currentNetMagnitude.toFixed(2)}G<br>JERK ACCEL: ${rawJerkDelta.toFixed(2)}<br>DRIVE: HYBRID MODE`;
 
-    // The harder and faster you move/pump your legs, the higher the G-Force magnitude goes
     if (currentNetMagnitude > ENGINE_CONFIG.motionStepFloor) {
       let forceOverFloor = currentNetMagnitude - ENGINE_CONFIG.motionStepFloor;
-      
-      // Proportional Velocity Gain: Speed scales linearly with step frequency and effort
       runtime.workoutBoostVel += forceOverFloor * ENGINE_CONFIG.kineticInputGain;
     }
 
@@ -416,13 +419,14 @@
     function breakTracking() {
       runtime.joystickTracking = false;
       knobNode.style.transform = `translate3d(0px, 0px, 0px)`;
-      knobNode.style.borderColor = "rgba(255, 255, 255, 0.7)";
+      knobNode.style.borderColor = "rgba(255, 255, 255, 0.8)";
       runtime.aimVectorX = 0;
       runtime.aimVectorY = 0;
     }
 
+    // Explicit interception setup to allow non-blocking touch evaluation
     boundaryNode.addEventListener('touchstart', (e) => { runtime.joystickTracking = true; evaluateInputVector(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
-    window.addEventListener('touchmove', (e) => { if (runtime.joystickTracking) { evaluateInputVector(e.touches[0].clientX, e.touches[0].clientY); e.preventDefault(); } }, { passive: false });
+    window.addEventListener('touchmove', (e) => { if (runtime.joystickTracking) { evaluateInputVector(e.touches[0].clientX, e.touches[0].clientY); } }, { passive: true });
     window.addEventListener('touchend', breakTracking);
 
     boundaryNode.addEventListener('mousedown', (e) => { runtime.joystickTracking = true; evaluateInputVector(e.clientX, e.clientY); });
@@ -455,13 +459,12 @@
   }
 
   function processDesktopSimulatedPhysics(dt) {
-    // If testing on desktop, holding Left Shift simulates jogging hard for velocity scaling
     if (runtime.aimVectorX !== 0 || runtime.aimVectorY !== 0) {
       if (virtualKeyArray['ShiftLeft']) {
-        runtime.workoutBoostVel += 580.0 * dt; // High physical emulation
+        runtime.workoutBoostVel += 590.0 * dt; 
       }
     }
-    DOM.diagnostic.innerHTML = `MODE: DEV SIMULATOR ACTIVE<br>WASD/ARROWS = STEER<br>HOLD SHIFT = JOG HARD (SUPER SPEED)<br>SPACEBAR = WEAPON ATTACK`;
+    DOM.diagnostic.innerHTML = `MODE: DEV SIMULATOR ACTIVE<br>WASD/ARROWS = STEER & MOVE<br>HOLD SHIFT = SIMULATE JOGGING GEARS<br>SPACEBAR = COMBAT SHAKE`;
   }
 
   function evaluateCombatInteraction() {
@@ -476,7 +479,7 @@
     if (distanceToTarget <= ENGINE_CONFIG.combatContactZone) {
       executeValidatedMeleeStrike();
     } else {
-      DOM.feed.textContent = "❌ Out of Range! Rush close to the right side!";
+      DOM.feed.textContent = "❌ Too far! Move right next to the Boss!";
       DOM.feed.style.color = "#ffaa00";
     }
   }
@@ -493,14 +496,14 @@
     void DOM.enemy.offsetWidth;
     DOM.enemy.classList.add('take-damage');
 
-    DOM.feed.textContent = `💥 Hit Boss! Target Health: ${runtime.eBoss}%`;
+    DOM.feed.textContent = `💥 Smacked Boss! Target HP: ${runtime.eBoss}%`;
     DOM.feed.style.color = "var(--primary)";
 
     if (runtime.eBoss <= 0) declareEndGameState(true);
   }
 
   /**
-   * DELTA ENGINE PHYSICS LOOP
+   * FRAME CLOCK RUN PHYSICS PIPELINE
    */
   function gameEngineTick(currentFrameTimestamp) {
     if (runtime.isHalted) return;
@@ -514,60 +517,58 @@
       processDesktopSimulatedPhysics(deltaTime);
     }
 
-    // 1. Decelerate workout boost speed over time (momentum decay friction)
+    // 1. Friction Decay Track
     if (runtime.workoutBoostVel > 0) {
-      runtime.workoutBoostVel -= ENGINE_CONFIG.momentumDecay * 65.0 * deltaTime;
+      runtime.workoutBoostVel -= ENGINE_CONFIG.momentumDecay * 68.0 * deltaTime;
       if (runtime.workoutBoostVel < 0) runtime.workoutBoostVel = 0;
     }
 
-    // 2. Fused Velocity Compilation Engine (Joystick base motor + Active exercise speed)
-    let totalTargetSpeed = 0;
+    // 2. Continuous Hybrid Velocity Matrix Compilation
+    let ongoingSpeedCalculated = 0;
     
-    // Check if player is aiming via controller input channels
     if (runtime.aimVectorX !== 0 || runtime.aimVectorY !== 0) {
-      totalTargetSpeed = ENGINE_CONFIG.baseJoystickSpeed + runtime.workoutBoostVel;
+      // Direct integration sum: baseline joystick drive + active body acceleration tracking pools
+      ongoingSpeedCalculated = ENGINE_CONFIG.baseJoystickSpeed + runtime.workoutBoostVel;
     } else {
-      // If joystick is dropped, allow body momentum to skid out slightly
-      totalTargetSpeed = runtime.workoutBoostVel * 0.4;
+      // Maintain directional slide deceleration drift if joystick tracks center point instantly
+      ongoingSpeedCalculated = runtime.workoutBoostVel * 0.5;
     }
 
-    // Velocity ceiling clamping logic
-    if (totalTargetSpeed > ENGINE_CONFIG.velocityCeiling) {
-      totalTargetSpeed = ENGINE_CONFIG.velocityCeiling;
+    if (ongoingSpeedCalculated > ENGINE_CONFIG.velocityCeiling) {
+      ongoingSpeedCalculated = ENGINE_CONFIG.velocityCeiling;
     }
 
-    // Assign final delta velocity values matching normalized heading direction
+    // Compute localized final component translations
     if (runtime.aimVectorX !== 0 || runtime.aimVectorY !== 0) {
-      runtime.pVx = runtime.aimVectorX * totalTargetSpeed;
-      runtime.pVy = runtime.aimVectorY * totalTargetSpeed;
+      runtime.pVx = runtime.aimVectorX * ongoingSpeedCalculated;
+      runtime.pVy = runtime.aimVectorY * ongoingSpeedCalculated;
     } else {
-      // Linear glide slide down if controller is completely centered
-      runtime.pVx *= 0.82;
-      runtime.pVy *= 0.82;
+      runtime.pVx *= 0.80;
+      runtime.pVy *= 0.80;
     }
 
-    // 3. Apply changes to coordinates
+    // 3. Update spatial delta positions
     runtime.pX += runtime.pVx * deltaTime;
     runtime.pY += runtime.pVy * deltaTime;
 
-    // 4. Solid Arena Boundary Lock
+    // 4. Rigid Arena Constraints Map Boundary Checks
     runtime.pX = Math.max(0, Math.min(window.innerWidth - 64, runtime.pX));
     runtime.pY = Math.max(0, Math.min(window.innerHeight - 64, runtime.pY));
 
-    // 5. Fireball Spawner Clock Track
+    // 5. Weapon Clock Monitor
     if (currentFrameTimestamp - runtime.lastBossAttackTime > ENGINE_CONFIG.bossAttackCooldown) {
       runtime.lastBossAttackTime = currentFrameTimestamp;
       spawnBossProjectile();
     }
 
-    // 6. Move and handle bullets
+    // 6. Loop Projectile arrays
     processActiveProjectiles(deltaTime);
 
-    // Write positions to matrix elements
+    // Render Clean Positions using translate3d layout nodes
     DOM.player.style.transform = `translate3d(${runtime.pX}px, ${runtime.pY}px, 0px)`;
     DOM.enemy.style.transform = `translate3d(${runtime.eX}px, ${runtime.eY}px, 0px)`;
 
-    refreshHUDLogs(totalTargetSpeed);
+    refreshHUDLogs(ongoingSpeedCalculated);
 
     requestAnimationFrame(gameEngineTick);
   }
@@ -615,7 +616,7 @@
       if (projectileDistance < 38) {
         runtime.pHero = Math.max(runtime.pHero - 15, 0);
         DOM.pHP.style.width = `${runtime.pHero}%`;
-        DOM.feed.textContent = "💥 Took Damage! Move faster to dodge bullets!";
+        DOM.feed.textContent = "💥 Hit! Jog hard in place to flash-dodge attacks!";
         DOM.feed.style.color = "var(--danger)";
 
         DOM.player.classList.remove('take-damage');
@@ -630,15 +631,15 @@
     }
   }
 
-  function refreshHUDLogs(totalSpeed) {
-    if (totalSpeed > ENGINE_CONFIG.baseJoystickSpeed + 10) {
-      DOM.metrics.textContent = `🚀 RUN BURST! VELOCITY: ${Math.round(totalSpeed)} px/s (MAX OVERDRIVE)`;
+  function refreshHUDLogs(currentSpeed) {
+    if (currentSpeed > ENGINE_CONFIG.baseJoystickSpeed + 15) {
+      DOM.metrics.textContent = `⚡ TURBO RUN ACTIVATED! SPEED: ${Math.round(currentSpeed)} px/s`;
       DOM.metrics.style.color = "var(--primary)";
-    } else if (totalSpeed > 5) {
-      DOM.metrics.textContent = `🕹️ Joystick Navigation. Speed: ${Math.round(totalSpeed)} px/s. Jog to boost!`;
+    } else if (currentSpeed > 5) {
+      DOM.metrics.textContent = `🕹️ Joystick Motor Active (${Math.round(currentSpeed)} px/s). Run to boost!`;
       DOM.metrics.style.color = "#00e5ff";
     } else {
-      DOM.metrics.textContent = `Speed Output: 0 px/s | Standing Idle`;
+      DOM.metrics.textContent = `Speed Output: 0 px/s | System Idle`;
       DOM.metrics.style.color = "#696f7d";
     }
   }
@@ -649,16 +650,16 @@
     runtime.projectiles.forEach(b => b.dom.remove());
     runtime.projectiles = [];
 
-    DOM.feed.textContent = victory ? "🏆 DUNGEON CLEAR!" : "❌ DEFEATED!";
+    DOM.feed.textContent = victory ? "🏆 ARENA MASTERED!" : "❌ DEFEATED!";
     DOM.feed.style.color = victory ? "var(--primary)" : "var(--danger)";
     
     setTimeout(() => {
       DOM.overlay.innerHTML = `
         <h1 style="color: ${victory ? 'var(--primary)' : 'var(--danger)'}; letter-spacing: 2px;">
-          ${victory ? 'WORKOUT MASTERED' : 'SESSION ENDED'}
+          ${victory ? 'CORE OBTAINED' : 'SESSION ENDED'}
         </h1>
         <p style="color: #8e95a5; margin-bottom: 25px; font-size:0.95rem;">
-          ${victory ? 'Great cardio! You out-ran the defense systems and cleared the floor.' : 'Don\'t sweat it. Keep your heart rate high and try again!'}
+          ${victory ? 'Flawless stamina output. Target engine destroyed successfully.' : 'Keep your posture clear, build your pacing rhythm, and try again!'}
         </p>
         <button class="cta-btn" onclick="window.location.reload()">Start Over</button>
       `;
