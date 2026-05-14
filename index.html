@@ -17,7 +17,7 @@
       box-sizing: border-box;
       user-select: none;
       -webkit-user-select: none;
-      touch-action: none; /* Prevents mobile rubber-banding/scrolling */
+      touch-action: none;
     }
 
     body {
@@ -33,11 +33,10 @@
       position: relative;
       width: 100vw;
       height: 100vh;
-      background: radial-gradient(circle at center, #1a1c24 0%, #0d0e12 100%);
+      background: radial-gradient(circle at center, #161821 0%, #0d0e12 100%);
       overflow: hidden;
     }
 
-    /* Permission Overlay Screen */
     #overlay {
       position: absolute;
       top: 0;
@@ -64,12 +63,8 @@
       border-radius: 30px;
       cursor: pointer;
       box-shadow: 0 5px 15px rgba(0, 255, 102, 0.4);
-      transition: transform 0.2s;
     }
 
-    .cta-btn:active { transform: scale(0.95); }
-
-    /* Game Entities */
     .sprite {
       position: absolute;
       width: 60px;
@@ -88,23 +83,20 @@
       box-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
     }
 
-    /* Animations */
     .attack-bounce { animation: attackMelee 0.25s ease-out; }
     .damage-flash { animation: flashRed 0.15s ease-in-out 2; }
 
     @keyframes attackMelee {
       0% { transform: scale(1); }
-      50% { transform: scale(1.3); filter: brightness(1.5); }
+      50% { transform: scale(1.3); }
       100% { transform: scale(1); }
     }
 
     @keyframes flashRed {
-      0% { opacity: 1; }
-      50% { opacity: 0.4; filter: brightness(3) cubic-bezier(0, 1, 1, 0); }
-      100% { opacity: 1; }
+      0%, 100% { opacity: 1; filter: brightness(1); }
+      50% { opacity: 0.4; filter: brightness(2); }
     }
 
-    /* UI HUD System */
     #ui-layer {
       position: absolute;
       top: 0;
@@ -130,7 +122,6 @@
     .health-label {
       font-size: 0.75rem;
       text-transform: uppercase;
-      letter-spacing: 1px;
       margin-bottom: 5px;
       color: #aaa;
     }
@@ -141,7 +132,6 @@
       background: #222;
       border-radius: 7px;
       overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.05);
     }
 
     .health-bar-inner {
@@ -171,30 +161,28 @@
       color: #00e5ff;
     }
 
-    /* Mobile Virtual Joystick Container */
+    /* Steerable Directional Joystick */
     #joystick-zone {
       position: absolute;
       bottom: 120px;
       left: 40px;
       width: 110px;
       height: 110px;
-      background: rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.04);
       border: 2px solid rgba(255, 255, 255, 0.15);
       border-radius: 50%;
       display: flex;
       justify-content: center;
       align-items: center;
       z-index: 20;
-      touch-action: none;
     }
 
     #joystick-handle {
       width: 45px;
       height: 45px;
-      background: rgba(255, 255, 255, 0.3);
-      border: 2px solid #fff;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.6);
       border-radius: 50%;
-      transition: background 0.1s;
       pointer-events: none;
     }
 
@@ -204,7 +192,7 @@
       left: 20px;
       font-family: monospace;
       font-size: 0.75rem;
-      color: #555;
+      color: #444;
       pointer-events: none;
     }
   </style>
@@ -213,11 +201,11 @@
 
 <div id="game-container">
   <div id="overlay">
-    <h1 style="text-transform: uppercase; letter-spacing: 2px; color: var(--primary);">FitQuest</h1>
+    <h1 style="letter-spacing: 2px; color: var(--primary);">FitQuest</h1>
     <p style="color: #8a8f9d; margin-bottom: 30px; max-width: 280px; font-size: 0.95rem;">
-      Use the <b>virtual joystick</b> to move anywhere. Shake your device firmly to attack when close!
+      <b>Aim the controller</b> to choose your direction, then <b>move/walk in place</b> to run there! Shake your phone to strike!
     </p>
-    <button class="cta-btn" onclick="initializeGame()">START GAME</button>
+    <button class="cta-btn" onclick="initializeGame()">START ENGINE</button>
   </div>
 
   <div id="screen-log"></div>
@@ -242,24 +230,27 @@
     </div>
 
     <div class="bottom-hud">
-      <div id="combat-log">Move into range...</div>
+      <div id="combat-log">Steer & move to explore...</div>
     </div>
   </div>
 </div>
 
 <script>
   const CONFIG = {
-    shakeThreshold: 23.0,
+    moveThreshold: 12.0,      // Accelerometer break limit to detect dynamic stepping/cycling
+    shakeThreshold: 24.0,     // High spike window to track a sword slash strike
     attackCooldown: 500,
     attackRange: 75,
-    maxSpeed: 6,
+    maxSpeed: 7,
+    friction: 0.88,          // Natural glide-deceleration when physics motion stops
     joystickRadius: 55
   };
 
   let state = {
     playerX: 0, playerY: 0,
     enemyX: 0, enemyY: 0,
-    inputX: 0, inputY: 0, // Dynamic controller registration inputs
+    dirX: 0, dirY: 1,         // Direction vectors (Defaults facing rightwards)
+    playerVelocity: 0,        // Unified speed scale generated from physical movement
     playerHP: 100, enemyHP: 100,
     lastAttackTime: 0,
     isGameOver: false,
@@ -281,7 +272,7 @@
   function initializeGame() {
     if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
       DeviceMotionEvent.requestPermission()
-        .then(response => { if (response === 'granted') setupEngine(); else setupEngine(); })
+        .then(response => { setupEngine(); })
         .catch(() => setupEngine());
     } else {
       setupEngine();
@@ -291,26 +282,25 @@
   function setupEngine() {
     DOM.overlay.style.display = 'none';
     
-    // Initial Spawn Positions (2D Placement)
-    state.playerX = 80;
-    state.playerY = window.innerHeight / 2 - 30;
-    state.enemyX = window.innerWidth - 140;
-    state.enemyY = window.innerHeight / 2 - 30;
+    // Position Spawn Setup
+    state.playerX = window.innerWidth * 0.2;
+    state.playerY = window.innerHeight * 0.5 - 30;
+    state.enemyX = window.innerWidth * 0.75;
+    state.enemyY = window.innerHeight * 0.5 - 30;
     
     updateSpritePositions();
 
-    // Event Wire-up
     window.addEventListener('devicemotion', processMotion, false);
     setupJoystick();
     
-    // Desktop keyboard support fallback (WASD / Arrows)
+    // Keyboard Support Fallback for Desktop Dev Environment (WASD or Arrows)
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
     requestAnimationFrame(gameLoop);
   }
 
-  // Virtual Joystick Event Handler Pipeline
+  // Joystick Processing Setup
   function setupJoystick() {
     const zone = DOM.joystickZone;
     const handle = DOM.joystickHandle;
@@ -321,129 +311,132 @@
       let touch = e.touches ? e.touches[0] : e;
       let rect = zone.getBoundingClientRect();
       
-      // Calculate offset distance from center of pad
       let deltaX = touch.clientX - (rect.left + center.x);
       let deltaY = touch.clientY - (rect.top + center.y);
       let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
       
-      // Clamp handle vector constraint boundaries
+      if (distance > 0) {
+        // Normalize the vector pointing path direction
+        state.dirX = deltaX / distance;
+        state.dirY = deltaY / distance;
+      }
+
+      // Handle clamp aesthetics visually
       if (distance > CONFIG.joystickRadius) {
-        deltaX = (deltaX / distance) * CONFIG.joystickRadius;
-        deltaY = (deltaY / distance) * CONFIG.joystickRadius;
-        distance = CONFIG.joystickRadius;
+        deltaX = state.dirX * CONFIG.joystickRadius;
+        deltaY = state.dirY * CONFIG.joystickRadius;
       }
 
       handle.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-      handle.style.background = "rgba(0, 255, 102, 0.6)";
-
-      // Normalize inputs to a factor scale running from -1.0 to 1.0
-      state.inputX = deltaX / CONFIG.joystickRadius;
-      state.inputY = deltaY / CONFIG.joystickRadius;
+      handle.style.borderColor = "var(--primary)";
+      
+      // Accessibility feature: holding joystick down completely also generates minor forward crawl speed
+      if (distance > 10) {
+        state.playerVelocity = Math.max(state.playerVelocity, (distance / CONFIG.joystickRadius) * 2);
+      }
     }
 
     function handleEnd() {
       state.joystickActive = false;
       handle.style.transform = `translate(0px, 0px)`;
-      handle.style.background = "rgba(255, 255, 255, 0.3)";
-      state.inputX = 0;
-      state.inputY = 0;
+      handle.style.borderColor = "rgba(255, 255, 255, 0.6)";
     }
 
     zone.addEventListener('touchstart', (e) => { state.joystickActive = true; handleMove(e); }, {passive: false});
     window.addEventListener('touchmove', handleMove, {passive: false});
     window.addEventListener('touchend', handleEnd);
 
-    // Desktop Mouse simulation for Joystick element mapping
     zone.addEventListener('mousedown', (e) => { state.joystickActive = true; handleMove(e); });
     window.addEventListener('mousemove', handleMove);
     window.addEventListener('mouseup', handleEnd);
   }
 
-  // Accelerator Shake Sensor Engine
+  // Combined Motion tracking processor
   function processMotion(event) {
     if (state.isGameOver) return;
     let acc = event.accelerationIncludingGravity;
     if (!acc) return;
 
     let totalForce = Math.sqrt((acc.x||0)**2 + (acc.y||0)**2 + (acc.z||0)**2);
+    DOM.debug.innerHTML = `PHYSICAL ENERGY SENSOR: ${totalForce.toFixed(2)}`;
 
+    // If body movement energy breaches threshold (User steps, spins, runs or circles in place)
+    if (totalForce > CONFIG.moveThreshold) {
+      // Inject energy velocity into whichever direction vector the controller is currently pointing
+      state.playerVelocity = Math.min(state.playerVelocity + 0.8, CONFIG.maxSpeed);
+    }
+
+    // Secondary threshold pipeline for executing attacks via structural device shaking
     if (totalForce > CONFIG.shakeThreshold) {
       attemptAttack();
     }
   }
 
-  // Desktop Simulation Control Mapping Matrix
+  // Keyboard controls translation map for manual desktop test profiles
   let keys = {};
   function handleKeyDown(e) {
     keys[e.code] = true;
-    updateKeyboardInput();
-    if (e.code === 'Space') attemptAttack(); // Spacebar handles screen-tap weapon action triggers
+    let kX = (keys['KeyD'] || keys['ArrowRight'] ? 1 : 0) - (keys['KeyA'] || keys['ArrowLeft'] ? 1 : 0);
+    let kY = (keys['KeyS'] || keys['ArrowDown'] ? 1 : 0) - (keys['KeyW'] || keys['ArrowUp'] ? 1 : 0);
+    
+    if (kX !== 0 || kY !== 0) {
+      let len = Math.sqrt(kX*kX + kY*kY);
+      state.dirX = kX / len;
+      state.dirY = kY / len;
+      state.playerVelocity = Math.min(state.playerVelocity + 1.5, CONFIG.maxSpeed); // Simulate stepping input
+    }
+    if (e.code === 'Space') attemptAttack();
   }
-  function handleKeyUp(e) {
-    keys[e.code] = false;
-    updateKeyboardInput();
-  }
-  function updateKeyboardInput() {
-    if (state.joystickActive) return; // Prioritize joystick over keys
-    state.inputX = (keys['KeyD'] || keys['ArrowRight'] ? 1 : 0) - (keys['KeyA'] || keys['ArrowLeft'] ? 1 : 0);
-    state.inputY = (keys['KeyS'] || keys['ArrowDown'] ? 1 : 0) - (keys['KeyW'] || keys['ArrowUp'] ? 1 : 0);
+  function handleKeyUp(e) { keys[e.code] = false; }
+
+  // Game Render and Calculations Logic Loop
+  function gameLoop() {
+    if (state.isGameOver) return;
+
+    // Apply friction to slow down cleanly when step input cuts out
+    state.playerVelocity *= CONFIG.friction;
+    if (state.playerVelocity < 0.05) state.playerVelocity = 0;
+
+    // Displace player coordinates using combined: [Velocity Scalar] x [Joystick Direction Angle Units]
+    state.playerX += state.dirX * state.playerVelocity;
+    state.playerY += state.dirY * state.playerVelocity;
+
+    // Canvas boundary safety collision calculations
+    state.playerX = Math.max(0, Math.min(window.innerWidth - 60, state.playerX));
+    state.playerY = Math.max(0, Math.min(window.innerHeight - 60, state.playerY));
+
+    updateSpritePositions();
+    requestAnimationFrame(gameLoop);
   }
 
-  // Dynamic 2D Collision Calculation Framework
   function attemptAttack() {
     if (state.isGameOver) return;
     let now = Date.now();
     if (now - state.lastAttackTime < CONFIG.attackCooldown) return;
     state.lastAttackTime = now;
 
-    // Direct geometric Euclidean vector line calculations between elements
-    let pCenterX = state.playerX + 30;
-    let pCenterY = state.playerY + 30;
-    let eCenterX = state.enemyX + 30;
-    let eCenterY = state.enemyY + 30;
-
-    let dist = Math.sqrt((eCenterX - pCenterX)**2 + (eCenterY - pCenterY)**2);
+    let dist = Math.sqrt(((state.enemyX+30) - (state.playerX+30))**2 + ((state.enemyY+30) - (state.playerY+30))**2);
 
     if (dist <= CONFIG.attackRange + 40) {
-      executeMeleeStrike();
+      DOM.player.classList.remove('attack-bounce');
+      void DOM.player.offsetWidth;
+      DOM.player.classList.add('attack-bounce');
+
+      state.enemyHP = Math.max(state.enemyHP - 20, 0);
+      DOM.enemyHPFill.style.width = `${state.enemyHP}%`;
+      
+      DOM.enemy.classList.remove('damage-flash');
+      void DOM.enemy.offsetWidth;
+      DOM.enemy.classList.add('damage-flash');
+
+      DOM.combatLog.textContent = `💥 Enemy Smashed! Boss Health: ${state.enemyHP}%`;
+      DOM.combatLog.style.color = "var(--primary)";
+
+      if (state.enemyHP <= 0) endGame();
     } else {
-      DOM.combatLog.textContent = "❌ Out of Range! Move closer to the Red Boss.";
+      DOM.combatLog.textContent = "❌ Out of range! Point stick at boss and run closer.";
       DOM.combatLog.style.color = "#ffaa00";
     }
-  }
-
-  function executeMeleeStrike() {
-    DOM.player.classList.remove('attack-bounce');
-    void DOM.player.offsetWidth;
-    DOM.player.classList.add('attack-bounce');
-
-    state.enemyHP = Math.max(state.enemyHP - 20, 0);
-    DOM.enemyHPFill.style.width = `${state.enemyHP}%`;
-    
-    DOM.enemy.classList.remove('damage-flash');
-    void DOM.enemy.offsetWidth;
-    DOM.enemy.classList.add('damage-flash');
-
-    DOM.combatLog.textContent = `💥 Smacked Boss! HP Remaining: ${state.enemyHP}%`;
-    DOM.combatLog.style.color = "var(--primary)";
-
-    if (state.enemyHP <= 0) endGame(true);
-  }
-
-  // Engine Processing Ticks
-  function gameLoop() {
-    if (state.isGameOver) return;
-
-    // Compute delta coordinates
-    state.playerX += state.inputX * CONFIG.maxSpeed;
-    state.playerY += state.inputY * CONFIG.maxSpeed;
-
-    // Enforce 2D Screen Boundaries Constraints
-    state.playerX = Math.max(0, Math.min(window.innerWidth - 60, state.playerX));
-    state.playerY = Math.max(0, Math.min(window.innerHeight - 60, state.playerY));
-
-    updateSpritePositions();
-    requestAnimationFrame(gameLoop);
   }
 
   function updateSpritePositions() {
@@ -453,9 +446,9 @@
     DOM.enemy.style.top = `${state.enemyY}px`;
   }
 
-  function endGame(victory) {
+  function endGame() {
     state.isGameOver = true;
-    DOM.combatLog.textContent = "🏆 DUNGEON CLEARED!";
+    DOM.combatLog.textContent = "🏆 DUNGEON CLEAR!";
     setTimeout(() => {
       DOM.overlay.innerHTML = `
         <h1 style="color: var(--primary)">QUEST CLEAR!</h1>
