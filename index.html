@@ -489,4 +489,191 @@
 
     if (distanceToTarget <= ENGINE_CONFIG.combatContactZone) {
       executeValidatedMeleeStrike();
+    } else {
+      DOM.feed.textContent = "❌ Too far away! Jog into range near the right side!";
+      DOM.feed.style.color = "#ffaa00";
     }
+  }
+
+  function executeValidatedMeleeStrike() {
+    DOM.player.classList.remove('melee-strike');
+    void DOM.player.offsetWidth; 
+    DOM.player.classList.add('melee-strike');
+
+    runtime.eBoss = Math.max(runtime.eBoss - 20, 0);
+    DOM.eHP.style.width = `${runtime.eBoss}%`;
+
+    DOM.enemy.classList.remove('take-damage');
+    void DOM.enemy.offsetWidth;
+    DOM.enemy.classList.add('take-damage');
+
+    DOM.feed.textContent = `💥 Hit Boss! Target HP: ${runtime.eBoss}%`;
+    DOM.feed.style.color = "var(--primary)";
+
+    if (runtime.eBoss <= 0) declareEndGameState(true);
+  }
+
+  /**
+   * PRO CONTEXT DELTA ENGINE RUN CLOCK
+   */
+  function gameEngineTick(currentFrameTimestamp) {
+    if (runtime.isHalted) return;
+
+    let deltaTime = (currentFrameTimestamp - runtime.lastFrameTime) / 1000;
+    runtime.lastFrameTime = currentFrameTimestamp;
+
+    if (deltaTime > 0.15) deltaTime = 0.15;
+
+    if (runtime.isDesktopFallback) {
+      processDesktopSimulatedPhysics(deltaTime);
+    }
+
+    // 1. Friction Dampening
+    let absoluteVelocityMagnitude = Math.sqrt(runtime.pVx**2 + runtime.pVy**2);
+    if (absoluteVelocityMagnitude > 0) {
+      let dragReductionUnit = ENGINE_CONFIG.momentumDecay * deltaTime;
+      if (absoluteVelocityMagnitude <= dragReductionUnit) {
+        runtime.pVx = 0; runtime.pVy = 0;
+      } else {
+        runtime.pVx -= (runtime.pVx / absoluteVelocityMagnitude) * dragReductionUnit * absoluteVelocityMagnitude;
+        runtime.pVy -= (runtime.pVy / absoluteVelocityMagnitude) * dragReductionUnit * absoluteVelocityMagnitude;
+      }
+    }
+
+    // 2. Clamp Velocity
+    let currentSpeedMetric = Math.sqrt(runtime.pVx**2 + runtime.pVy**2);
+    if (currentSpeedMetric > ENGINE_CONFIG.velocityCeiling) {
+      runtime.pVx = (runtime.pVx / currentSpeedMetric) * ENGINE_CONFIG.velocityCeiling;
+      runtime.pVy = (runtime.pVy / currentSpeedMetric) * ENGINE_CONFIG.velocityCeiling;
+    }
+
+    // 3. Coordinate Update
+    runtime.pX += runtime.pVx * deltaTime;
+    runtime.pY += runtime.pVy * deltaTime;
+
+    // 4. Boundary Protection
+    runtime.pX = Math.max(0, Math.min(window.innerWidth - 64, runtime.pX));
+    runtime.pY = Math.max(0, Math.min(window.innerHeight - 64, runtime.pY));
+
+    // 5. Boss Ranged Combat Attack Triggers
+    if (currentFrameTimestamp - runtime.lastBossAttackTime > ENGINE_CONFIG.bossAttackCooldown) {
+      runtime.lastBossAttackTime = currentFrameTimestamp;
+      spawnBossProjectile();
+    }
+
+    // 6. Projectiles Vector Update Pipeline
+    processActiveProjectiles(deltaTime);
+
+    // Render Transforms
+    DOM.player.style.transform = `translate3d(${runtime.pX}px, ${runtime.pY}px, 0px)`;
+    DOM.enemy.style.transform = `translate3d(${runtime.eX}px, ${runtime.eY}px, 0px)`;
+
+    refreshHUDLogs();
+
+    requestAnimationFrame(gameEngineTick);
+  }
+
+  /**
+   * PROTEST SYSTEMS: PROJECTILE DISPATCH & HIT DETECTION
+   */
+  function spawnBossProjectile() {
+    let bulletNode = document.createElement('div');
+    bulletNode.className = 'projectile';
+    DOM.container.appendChild(bulletNode);
+
+    // Calculate heading direction angles targeting the current location of the player element
+    let bOriginX = runtime.eX + 24;
+    let bOriginY = runtime.eY + 24;
+    let targetVecX = (runtime.pX + 32) - bOriginX;
+    let targetVecY = (runtime.pY + 32) - bOriginY;
+    let vectorDistance = Math.sqrt(targetVecX * targetVecX + targetVecY * targetVecY);
+
+    let projObject = {
+      dom: bulletNode,
+      x: bOriginX,
+      y: bOriginY,
+      vX: (targetVecX / vectorDistance) * ENGINE_CONFIG.fireballSpeed,
+      vY: (targetVecY / vectorDistance) * ENGINE_CONFIG.fireballSpeed
+    };
+
+    runtime.projectiles.push(projObject);
+  }
+
+  function processActiveProjectiles(dt) {
+    for (let i = runtime.projectiles.length - 1; i >= 0; i--) {
+      let b = runtime.projectiles[i];
+      b.x += b.vX * dt;
+      b.y += b.vY * dt;
+
+      b.dom.style.transform = `translate3d(${b.x}px, ${b.y}px, 0px)`;
+
+      // Boundary cleanup check to free up memory spaces
+      if (b.x < -20 || b.x > window.innerWidth + 20 || b.y < -20 || b.y > window.innerHeight + 20) {
+        b.dom.remove();
+        runtime.projectiles.splice(i, 1);
+        continue;
+      }
+
+      // Check collision with your player node
+      let pCenterX = runtime.pX + 32;
+      let pCenterY = runtime.pY + 32;
+      let projectileDistance = Math.sqrt((pCenterX - (b.x + 8))**2 + (pCenterY - (b.y + 8))**2);
+
+      if (projectileDistance < 36) {
+        // Player takes a hit
+        runtime.pHero = Math.max(runtime.pHero - 15, 0);
+        DOM.pHP.style.width = `${runtime.pHero}%`;
+        DOM.feed.textContent = "💥 Ouch! You were hit by a fireball! Keep moving!";
+        DOM.feed.style.color = "var(--danger)";
+
+        DOM.player.classList.remove('take-damage');
+        void DOM.player.offsetWidth;
+        DOM.player.classList.add('take-damage');
+
+        // Delete bullet asset instance
+        b.dom.remove();
+        runtime.projectiles.splice(i, 1);
+
+        if (runtime.pHero <= 0) declareEndGameState(false);
+      }
+    }
+  }
+
+  function refreshHUDLogs() {
+    let scalarSpeedRepresentation = Math.sqrt(runtime.pVx**2 + runtime.pVy**2);
+    if (scalarSpeedRepresentation > 5) {
+      DOM.metrics.textContent = `Cadence Vector: ${runtime.cadenceFrequency.toFixed(1)} Hz | Velocity: ${Math.round(scalarSpeedRepresentation)} px/s`;
+      DOM.metrics.style.color = "var(--primary)";
+    } else {
+      DOM.metrics.textContent = `Cadence Vector: 0.00 Hz | Output: Idle (Step to Move)`;
+      DOM.metrics.style.color = "#696f7d";
+    }
+  }
+
+  function declareEndGameState(victory) {
+    runtime.isHalted = true;
+    
+    // Cleanup remaining bullet objects
+    runtime.projectiles.forEach(b => b.dom.remove());
+    runtime.projectiles = [];
+
+    DOM.feed.textContent = victory ? "🏆 GOAL OBTAINED!" : "❌ DEFEATED!";
+    DOM.feed.style.color = victory ? "var(--primary)" : "var(--danger)";
+    
+    setTimeout(() => {
+      DOM.overlay.innerHTML = `
+        <h1 style="color: ${victory ? 'var(--primary)' : 'var(--danger)'}; letter-spacing: 2px;">
+          ${victory ? 'SESSION COMPLETED' : 'QUEST FAILED'}
+        </h1>
+        <p style="color: #8e95a5; margin-bottom: 25px; font-size:0.95rem;">
+          ${victory ? 'Boss cleared successfully.' : 'Your vitals hit zero. Don\'t stop training!'}
+        </p>
+        <button class="cta-btn" onclick="window.location.reload()">Try Again</button>
+      `;
+      DOM.overlay.style.display = 'flex';
+    }, 1200);
+  }
+</script>
+
+</body>
+</html>
