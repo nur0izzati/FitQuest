@@ -17,13 +17,14 @@
       box-sizing: border-box;
       user-select: none;
       -webkit-user-select: none;
+      touch-action: none; /* Prevents mobile rubber-banding/scrolling */
     }
 
     body {
       margin: 0;
       padding: 0;
       overflow: hidden;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
       background: var(--bg);
       color: #fff;
     }
@@ -32,7 +33,7 @@
       position: relative;
       width: 100vw;
       height: 100vh;
-      background: linear-gradient(180deg, #1a1c24 0%, #0d0e12 100%);
+      background: radial-gradient(circle at center, #1a1c24 0%, #0d0e12 100%);
       overflow: hidden;
     }
 
@@ -53,16 +54,6 @@
       text-align: center;
     }
 
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 10px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      background: linear-gradient(45deg, var(--primary), #00e5ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
     .cta-btn {
       background: linear-gradient(135deg, var(--primary) 0%, #00b347 100%);
       border: none;
@@ -73,13 +64,10 @@
       border-radius: 30px;
       cursor: pointer;
       box-shadow: 0 5px 15px rgba(0, 255, 102, 0.4);
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: transform 0.2s;
     }
 
-    .cta-btn:active {
-      transform: scale(0.95);
-      box-shadow: 0 2px 5px rgba(0, 255, 102, 0.2);
-    }
+    .cta-btn:active { transform: scale(0.95); }
 
     /* Game Entities */
     .sprite {
@@ -87,44 +75,36 @@
       width: 60px;
       height: 60px;
       border-radius: 12px;
-      bottom: 30%;
-      transition: transform 0.1s ease;
+      will-change: transform, left, top;
     }
 
     #player {
       background: linear-gradient(135deg, var(--primary) 0%, #00a3cc 100%);
-      left: 10%;
       box-shadow: 0 0 20px rgba(0, 255, 102, 0.5);
     }
 
     #enemy {
       background: linear-gradient(135deg, var(--danger) 0%, #990000 100%);
-      right: 10%;
       box-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
     }
 
     /* Animations */
-    .attack-bounce {
-      animation: attackMelee 0.3s ease-in-out;
-    }
-    
-    .damage-flash {
-      animation: flashRed 0.15s ease-in-out 2;
-    }
+    .attack-bounce { animation: attackMelee 0.25s ease-out; }
+    .damage-flash { animation: flashRed 0.15s ease-in-out 2; }
 
     @keyframes attackMelee {
-      0% { transform: scale(1) translateX(0); }
-      50% { transform: scale(1.2) translateX(40px); }
-      100% { transform: scale(1) translateX(0); }
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3); filter: brightness(1.5); }
+      100% { transform: scale(1); }
     }
 
     @keyframes flashRed {
-      0% { opacity: 1; filter: brightness(1); }
-      50% { opacity: 0.5; filter: brightness(3) sepia(1) saturate(5) hue-rotate(-50deg); }
-      100% { opacity: 1; filter: brightness(1); }
+      0% { opacity: 1; }
+      50% { opacity: 0.4; filter: brightness(3) cubic-bezier(0, 1, 1, 0); }
+      100% { opacity: 1; }
     }
 
-    /* UI Overlay Systems */
+    /* UI HUD System */
     #ui-layer {
       position: absolute;
       top: 0;
@@ -136,16 +116,7 @@
       flex-direction: column;
       justify-content: space-between;
       padding: 20px;
-    }
-
-    .hud-panel {
-      background: var(--panel);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 15px;
-      pointer-events: auto;
+      z-index: 10;
     }
 
     .top-hud {
@@ -154,12 +125,10 @@
       width: 100%;
     }
 
-    .health-container {
-      width: 45%;
-    }
+    .health-container { width: 42%; }
 
     .health-label {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 1px;
       margin-bottom: 5px;
@@ -168,9 +137,9 @@
 
     .health-bar-outer {
       width: 100%;
-      height: 16px;
+      height: 14px;
       background: #222;
-      border-radius: 8px;
+      border-radius: 7px;
       overflow: hidden;
       border: 1px solid rgba(255,255,255,0.05);
     }
@@ -178,7 +147,7 @@
     .health-bar-inner {
       height: 100%;
       width: 100%;
-      transition: width 0.2s ease-out;
+      transition: width 0.15s ease-out;
     }
 
     #player-hp-fill { background: linear-gradient(90deg, #00ff66, #00bcff); }
@@ -187,31 +156,55 @@
     .bottom-hud {
       width: 100%;
       text-align: center;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 12px;
     }
 
     #combat-log {
-      height: 40px;
-      font-size: 1.1rem;
+      height: 30px;
+      font-size: 1rem;
       font-weight: bold;
       color: #00e5ff;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-      margin-bottom: 10px;
     }
 
-    .instructions {
-      font-size: 0.9rem;
-      color: #8a8f9d;
-      line-height: 1.4;
+    /* Mobile Virtual Joystick Container */
+    #joystick-zone {
+      position: absolute;
+      bottom: 120px;
+      left: 40px;
+      width: 110px;
+      height: 110px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+      touch-action: none;
+    }
+
+    #joystick-handle {
+      width: 45px;
+      height: 45px;
+      background: rgba(255, 255, 255, 0.3);
+      border: 2px solid #fff;
+      border-radius: 50%;
+      transition: background 0.1s;
+      pointer-events: none;
     }
 
     #screen-log {
       position: absolute;
-      top: 100px;
+      top: 80px;
       left: 20px;
       font-family: monospace;
       font-size: 0.75rem;
-      color: #666;
-      text-align: left;
+      color: #555;
       pointer-events: none;
     }
   </style>
@@ -220,11 +213,11 @@
 
 <div id="game-container">
   <div id="overlay">
-    <h1>FitQuest</h1>
-    <p style="color: #8a8f9d; margin-bottom: 30px; max-width: 280px;">
-      Step forward physically to approach the enemy. Shake your device firmly to attack when in range.
+    <h1 style="text-transform: uppercase; letter-spacing: 2px; color: var(--primary);">FitQuest</h1>
+    <p style="color: #8a8f9d; margin-bottom: 30px; max-width: 280px; font-size: 0.95rem;">
+      Use the <b>virtual joystick</b> to move anywhere. Shake your device firmly to attack when close!
     </p>
-    <button class="cta-btn" onclick="initializeGame()">ENTER QUEST</button>
+    <button class="cta-btn" onclick="initializeGame()">START GAME</button>
   </div>
 
   <div id="screen-log"></div>
@@ -232,57 +225,47 @@
   <div id="player" class="sprite"></div>
   <div id="enemy" class="sprite"></div>
 
+  <div id="joystick-zone">
+    <div id="joystick-handle"></div>
+  </div>
+
   <div id="ui-layer">
     <div class="top-hud">
       <div class="health-container">
-        <div class="health-label">Hero</div>
-        <div class="health-bar-outer">
-          <div id="player-hp-fill" class="health-bar-inner"></div>
-        </div>
+        <div class="health-label">Hero HP</div>
+        <div class="health-bar-outer"><div id="player-hp-fill" class="health-bar-inner"></div></div>
       </div>
       <div class="health-container" style="text-align: right;">
-        <div class="health-label">Enemy Boss</div>
-        <div class="health-bar-outer">
-          <div id="enemy-hp-fill" class="health-bar-inner"></div>
-        </div>
+        <div class="health-label">Boss HP</div>
+        <div class="health-bar-outer"><div id="enemy-hp-fill" class="health-bar-inner"></div></div>
       </div>
     </div>
 
-    <div class="bottom-hud hud-panel">
-      <div id="combat-log">Ready for combat...</div>
-      <div class="instructions">
-        🏃 Walk/Run in place to move closer<br>
-        ⚔️ Shake your device to attack when close
-      </div>
+    <div class="bottom-hud">
+      <div id="combat-log">Move into range...</div>
     </div>
   </div>
 </div>
 
 <script>
-  // Game Configuration Configuration
   const CONFIG = {
-    moveThreshold: 11.5,     // Total combined acceleration force to read running in place
-    shakeThreshold: 24.0,    // Hard threshold spike for registering weapon swings
-    attackCooldown: 600,     // Milliseconds between allowed weapon swings
-    attackRange: 80,         // Distance buffer (pixels) between bounding boxes to trigger combat
-    friction: 0.92,          // Inertial dampening for real-time movement decay
-    speedStep: 0.4,          // Velocity unit gained per step
-    maxSpeed: 8              // Speed ceiling
+    shakeThreshold: 23.0,
+    attackCooldown: 500,
+    attackRange: 75,
+    maxSpeed: 6,
+    joystickRadius: 55
   };
 
-  // State Management Engine
   let state = {
-    playerX: 0,
-    playerY: 0,
-    enemyX: 0,
-    playerSpeed: 0,
-    playerHP: 100,
-    enemyHP: 100,
+    playerX: 0, playerY: 0,
+    enemyX: 0, enemyY: 0,
+    inputX: 0, inputY: 0, // Dynamic controller registration inputs
+    playerHP: 100, enemyHP: 100,
     lastAttackTime: 0,
-    isGameOver: false
+    isGameOver: false,
+    joystickActive: false
   };
 
-  // DOM Cache
   const DOM = {
     overlay: document.getElementById('overlay'),
     player: document.getElementById('player'),
@@ -290,172 +273,196 @@
     playerHPFill: document.getElementById('player-hp-fill'),
     enemyHPFill: document.getElementById('enemy-hp-fill'),
     combatLog: document.getElementById('combat-log'),
+    joystickZone: document.getElementById('joystick-zone'),
+    joystickHandle: document.getElementById('joystick-handle'),
     debug: document.getElementById('screen-log')
   };
 
-  // Safe Setup Framework
   function initializeGame() {
     if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
       DeviceMotionEvent.requestPermission()
-        .then(response => {
-          if (response === 'granted') {
-            setupEngine();
-          } else {
-            alert("Motion permissions denied. Game cannot process steps.");
-          }
-        })
-        .catch(console.error);
+        .then(response => { if (response === 'granted') setupEngine(); else setupEngine(); })
+        .catch(() => setupEngine());
     } else {
-      setupEngine(); // Fallback for desktop testing or devices missing permission walls
+      setupEngine();
     }
   }
 
   function setupEngine() {
     DOM.overlay.style.display = 'none';
     
-    // Set dynamic startup layout locations
-    const containerWidth = window.innerWidth;
-    state.playerX = containerWidth * 0.1;
-    state.enemyX = containerWidth - (containerWidth * 0.1) - 60; // Adjust tracking for sprite sizing offset
+    // Initial Spawn Positions (2D Placement)
+    state.playerX = 80;
+    state.playerY = window.innerHeight / 2 - 30;
+    state.enemyX = window.innerWidth - 140;
+    state.enemyY = window.innerHeight / 2 - 30;
     
-    DOM.player.style.left = `${state.playerX}px`;
-    DOM.enemy.style.left = `${state.enemyX}px`;
+    updateSpritePositions();
 
+    // Event Wire-up
     window.addEventListener('devicemotion', processMotion, false);
+    setupJoystick();
     
-    // Desktop Simulation Control Fallback for Testing
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space') simulatedStep();
-      if (e.code === 'KeyA') simulatedShake();
-    });
+    // Desktop keyboard support fallback (WASD / Arrows)
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
 
-    // Run Engine Loops
     requestAnimationFrame(gameLoop);
   }
 
-  // Pure Motion Processing Engine
+  // Virtual Joystick Event Handler Pipeline
+  function setupJoystick() {
+    const zone = DOM.joystickZone;
+    const handle = DOM.joystickHandle;
+    const center = { x: CONFIG.joystickRadius, y: CONFIG.joystickRadius };
+
+    function handleMove(e) {
+      if (!state.joystickActive) return;
+      let touch = e.touches ? e.touches[0] : e;
+      let rect = zone.getBoundingClientRect();
+      
+      // Calculate offset distance from center of pad
+      let deltaX = touch.clientX - (rect.left + center.x);
+      let deltaY = touch.clientY - (rect.top + center.y);
+      let distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      
+      // Clamp handle vector constraint boundaries
+      if (distance > CONFIG.joystickRadius) {
+        deltaX = (deltaX / distance) * CONFIG.joystickRadius;
+        deltaY = (deltaY / distance) * CONFIG.joystickRadius;
+        distance = CONFIG.joystickRadius;
+      }
+
+      handle.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+      handle.style.background = "rgba(0, 255, 102, 0.6)";
+
+      // Normalize inputs to a factor scale running from -1.0 to 1.0
+      state.inputX = deltaX / CONFIG.joystickRadius;
+      state.inputY = deltaY / CONFIG.joystickRadius;
+    }
+
+    function handleEnd() {
+      state.joystickActive = false;
+      handle.style.transform = `translate(0px, 0px)`;
+      handle.style.background = "rgba(255, 255, 255, 0.3)";
+      state.inputX = 0;
+      state.inputY = 0;
+    }
+
+    zone.addEventListener('touchstart', (e) => { state.joystickActive = true; handleMove(e); }, {passive: false});
+    window.addEventListener('touchmove', handleMove, {passive: false});
+    window.addEventListener('touchend', handleEnd);
+
+    // Desktop Mouse simulation for Joystick element mapping
+    zone.addEventListener('mousedown', (e) => { state.joystickActive = true; handleMove(e); });
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+  }
+
+  // Accelerator Shake Sensor Engine
   function processMotion(event) {
     if (state.isGameOver) return;
-
     let acc = event.accelerationIncludingGravity;
     if (!acc) return;
 
-    let x = acc.x || 0;
-    let y = acc.y || 0;
-    let z = acc.z || 0;
+    let totalForce = Math.sqrt((acc.x||0)**2 + (acc.y||0)**2 + (acc.z||0)**2);
 
-    // Calculate Vector Magnitude
-    let totalForce = Math.sqrt(x*x + y*y + z*z);
-
-    // Dynamic Debug Logging Matrix
-    DOM.debug.innerHTML = `FORCE: ${totalForce.toFixed(2)}<br>X: ${x.toFixed(1)} | Y: ${y.toFixed(1)} | Z: ${z.toFixed(1)}`;
-
-    // Process Run Movement Tracker
-    if (totalForce > CONFIG.moveThreshold) {
-      state.playerSpeed = Math.min(state.playerSpeed + CONFIG.speedStep, CONFIG.maxSpeed);
-    }
-
-    // Process Shake Attack Tracker
     if (totalForce > CONFIG.shakeThreshold) {
       attemptAttack();
     }
   }
 
-  // Simulated triggers for cross-device manual checking
-  function simulatedStep() {
-    state.playerSpeed = Math.min(state.playerSpeed + 2.5, CONFIG.maxSpeed);
+  // Desktop Simulation Control Mapping Matrix
+  let keys = {};
+  function handleKeyDown(e) {
+    keys[e.code] = true;
+    updateKeyboardInput();
+    if (e.code === 'Space') attemptAttack(); // Spacebar handles screen-tap weapon action triggers
   }
-  function simulatedShake() {
-    attemptAttack();
+  function handleKeyUp(e) {
+    keys[e.code] = false;
+    updateKeyboardInput();
+  }
+  function updateKeyboardInput() {
+    if (state.joystickActive) return; // Prioritize joystick over keys
+    state.inputX = (keys['KeyD'] || keys['ArrowRight'] ? 1 : 0) - (keys['KeyA'] || keys['ArrowLeft'] ? 1 : 0);
+    state.inputY = (keys['KeyS'] || keys['ArrowDown'] ? 1 : 0) - (keys['KeyW'] || keys['ArrowUp'] ? 1 : 0);
   }
 
-  // Combat Execution Pipeline
+  // Dynamic 2D Collision Calculation Framework
   function attemptAttack() {
+    if (state.isGameOver) return;
     let now = Date.now();
     if (now - state.lastAttackTime < CONFIG.attackCooldown) return;
-    
     state.lastAttackTime = now;
 
-    // Distance Metric Validation (Collision Check)
-    let separation = state.enemyX - (state.playerX + 60);
+    // Direct geometric Euclidean vector line calculations between elements
+    let pCenterX = state.playerX + 30;
+    let pCenterY = state.playerY + 30;
+    let eCenterX = state.enemyX + 30;
+    let eCenterY = state.enemyY + 30;
 
-    if (separation <= CONFIG.attackRange) {
+    let dist = Math.sqrt((eCenterX - pCenterX)**2 + (eCenterY - pCenterY)**2);
+
+    if (dist <= CONFIG.attackRange + 40) {
       executeMeleeStrike();
     } else {
-      DOM.combatLog.textContent = "❌ Too far away! Keep moving closer!";
+      DOM.combatLog.textContent = "❌ Out of Range! Move closer to the Red Boss.";
       DOM.combatLog.style.color = "#ffaa00";
     }
   }
 
   function executeMeleeStrike() {
-    // Attack Animation
     DOM.player.classList.remove('attack-bounce');
-    void DOM.player.offsetWidth; // Force hardware CSS update trigger
+    void DOM.player.offsetWidth;
     DOM.player.classList.add('attack-bounce');
 
-    // Damage calculation and animation on enemy target
-    state.enemyHP = Math.max(state.enemyHP - 15, 0);
+    state.enemyHP = Math.max(state.enemyHP - 20, 0);
     DOM.enemyHPFill.style.width = `${state.enemyHP}%`;
     
     DOM.enemy.classList.remove('damage-flash');
     void DOM.enemy.offsetWidth;
     DOM.enemy.classList.add('damage-flash');
 
-    DOM.combatLog.textContent = `💥 Critical Hit! Enemy HP: ${state.enemyHP}%`;
-    DOM.combatLog.style.color = varColor('--primary');
+    DOM.combatLog.textContent = `💥 Smacked Boss! HP Remaining: ${state.enemyHP}%`;
+    DOM.combatLog.style.color = "var(--primary)";
 
-    if (state.enemyHP <= 0) {
-      endGame(true);
-    }
+    if (state.enemyHP <= 0) endGame(true);
   }
 
-  // Core Frame Pipeline Tick
-  let lastTime = 0;
-  function gameLoop(timestamp) {
+  // Engine Processing Ticks
+  function gameLoop() {
     if (state.isGameOver) return;
 
-    // Handle smooth friction decay physics
-    state.playerSpeed *= CONFIG.friction;
-    if (state.playerSpeed < 0.05) state.playerSpeed = 0;
+    // Compute delta coordinates
+    state.playerX += state.inputX * CONFIG.maxSpeed;
+    state.playerY += state.inputY * CONFIG.maxSpeed;
 
-    // Boundary constraint mapping
-    let maxAllowedX = state.enemyX - CONFIG.attackRange;
-    state.playerX += state.playerSpeed;
+    // Enforce 2D Screen Boundaries Constraints
+    state.playerX = Math.max(0, Math.min(window.innerWidth - 60, state.playerX));
+    state.playerY = Math.max(0, Math.min(window.innerHeight - 60, state.playerY));
 
-    if (state.playerX > maxAllowedX) {
-      state.playerX = maxAllowedX;
-      state.playerSpeed = 0;
-    }
-
-    // Write to Layout Render Engine
-    DOM.player.style.left = `${state.playerX}px`;
-
+    updateSpritePositions();
     requestAnimationFrame(gameLoop);
+  }
+
+  function updateSpritePositions() {
+    DOM.player.style.left = `${state.playerX}px`;
+    DOM.player.style.top = `${state.playerY}px`;
+    DOM.enemy.style.left = `${state.enemyX}px`;
+    DOM.enemy.style.top = `${state.enemyY}px`;
   }
 
   function endGame(victory) {
     state.isGameOver = true;
-    window.removeEventListener('devicemotion', processMotion);
-    
-    if (victory) {
-      DOM.combatLog.textContent = "🏆 VICTORY! Dark Boss Defeated!";
-      DOM.combatLog.style.color = varColor('--primary');
-    }
-    
-    // Present Reset Interactive Flow after delay
+    DOM.combatLog.textContent = "🏆 DUNGEON CLEARED!";
     setTimeout(() => {
       DOM.overlay.innerHTML = `
-        <h1>${victory ? 'Quest Clear!' : 'Defeat'}</h1>
-        <p style="color: #aaa; margin-bottom: 20px;">Performance logged safely.</p>
+        <h1 style="color: var(--primary)">QUEST CLEAR!</h1>
         <button class="cta-btn" onclick="window.location.reload()">PLAY AGAIN</button>
       `;
       DOM.overlay.style.display = 'flex';
-    }, 1500);
-  }
-
-  // Inline CSS variable extractor helper
-  function varColor(name) {
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }, 1200);
   }
 </script>
 
