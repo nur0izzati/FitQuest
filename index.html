@@ -1,166 +1,462 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>FitQuest Prototype</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>FitQuest: Active RPG</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
   <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      font-family: Arial;
-      background: #111;
-      color: white;
-      text-align: center;
+    :root {
+      --primary: #00ff66;
+      --danger: #ff3333;
+      --bg: #0d0e12;
+      --panel: rgba(22, 24, 33, 0.85);
     }
 
-    #game {
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: #fff;
+    }
+
+    #game-container {
       position: relative;
       width: 100vw;
       height: 100vh;
+      background: linear-gradient(180deg, #1a1c24 0%, #0d0e12 100%);
+      overflow: hidden;
+    }
+
+    /* Permission Overlay Screen */
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(13, 14, 18, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      padding: 30px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(45deg, var(--primary), #00e5ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .cta-btn {
+      background: linear-gradient(135deg, var(--primary) 0%, #00b347 100%);
+      border: none;
+      color: #000;
+      padding: 15px 40px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(0, 255, 102, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .cta-btn:active {
+      transform: scale(0.95);
+      box-shadow: 0 2px 5px rgba(0, 255, 102, 0.2);
+    }
+
+    /* Game Entities */
+    .sprite {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 12px;
+      bottom: 30%;
+      transition: transform 0.1s ease;
     }
 
     #player {
-      width: 50px;
-      height: 50px;
-      background: lime;
-      position: absolute;
-      left: 100px;
-      top: 200px;
+      background: linear-gradient(135deg, var(--primary) 0%, #00a3cc 100%);
+      left: 10%;
+      box-shadow: 0 0 20px rgba(0, 255, 102, 0.5);
     }
 
     #enemy {
-      width: 50px;
-      height: 50px;
-      background: red;
-      position: absolute;
-      right: 100px;
-      top: 200px;
+      background: linear-gradient(135deg, var(--danger) 0%, #990000 100%);
+      right: 10%;
+      box-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
     }
 
-    #enemyHP {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 150px;
-      height: 20px;
-      background: #555;
+    /* Animations */
+    .attack-bounce {
+      animation: attackMelee 0.3s ease-in-out;
+    }
+    
+    .damage-flash {
+      animation: flashRed 0.15s ease-in-out 2;
     }
 
-    #hpBar {
+    @keyframes attackMelee {
+      0% { transform: scale(1) translateX(0); }
+      50% { transform: scale(1.2) translateX(40px); }
+      100% { transform: scale(1) translateX(0); }
+    }
+
+    @keyframes flashRed {
+      0% { opacity: 1; filter: brightness(1); }
+      50% { opacity: 0.5; filter: brightness(3) sepia(1) saturate(5) hue-rotate(-50deg); }
+      100% { opacity: 1; filter: brightness(1); }
+    }
+
+    /* UI Overlay Systems */
+    #ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
-      background: red;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
     }
 
-    #info {
-      position: absolute;
-      bottom: 20px;
+    .hud-panel {
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 15px;
+      pointer-events: auto;
+    }
+
+    .top-hud {
+      display: flex;
+      justify-content: space-between;
       width: 100%;
     }
 
-    button {
-      padding: 10px;
-      font-size: 16px;
+    .health-container {
+      width: 45%;
+    }
+
+    .health-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+      color: #aaa;
+    }
+
+    .health-bar-outer {
+      width: 100%;
+      height: 16px;
+      background: #222;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .health-bar-inner {
+      height: 100%;
+      width: 100%;
+      transition: width 0.2s ease-out;
+    }
+
+    #player-hp-fill { background: linear-gradient(90deg, #00ff66, #00bcff); }
+    #enemy-hp-fill { background: linear-gradient(90deg, #ff3333, #ff8800); }
+
+    .bottom-hud {
+      width: 100%;
+      text-align: center;
+    }
+
+    #combat-log {
+      height: 40px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: #00e5ff;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      margin-bottom: 10px;
+    }
+
+    .instructions {
+      font-size: 0.9rem;
+      color: #8a8f9d;
+      line-height: 1.4;
+    }
+
+    #screen-log {
+      position: absolute;
+      top: 100px;
+      left: 20px;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: #666;
+      text-align: left;
+      pointer-events: none;
     }
   </style>
 </head>
-
 <body>
 
-<h2>FitQuest Prototype</h2>
-
-<button onclick="startMotion()">Start Motion</button>
-
-<div id="game">
-  <div id="player"></div>
-  <div id="enemy"></div>
-
-  <div id="enemyHP">
-    <div id="hpBar"></div>
+<div id="game-container">
+  <div id="overlay">
+    <h1>FitQuest</h1>
+    <p style="color: #8a8f9d; margin-bottom: 30px; max-width: 280px;">
+      Step forward physically to approach the enemy. Shake your device firmly to attack when in range.
+    </p>
+    <button class="cta-btn" onclick="initializeGame()">ENTER QUEST</button>
   </div>
 
-  <div id="info">
-    Move phone = walk | Shake = attack
+  <div id="screen-log"></div>
+
+  <div id="player" class="sprite"></div>
+  <div id="enemy" class="sprite"></div>
+
+  <div id="ui-layer">
+    <div class="top-hud">
+      <div class="health-container">
+        <div class="health-label">Hero</div>
+        <div class="health-bar-outer">
+          <div id="player-hp-fill" class="health-bar-inner"></div>
+        </div>
+      </div>
+      <div class="health-container" style="text-align: right;">
+        <div class="health-label">Enemy Boss</div>
+        <div class="health-bar-outer">
+          <div id="enemy-hp-fill" class="health-bar-inner"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-hud hud-panel">
+      <div id="combat-log">Ready for combat...</div>
+      <div class="instructions">
+        🏃 Walk/Run in place to move closer<br>
+        ⚔️ Shake your device to attack when close
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
-let player = document.getElementById("player");
-let hpBar = document.getElementById("hpBar");
+  // Game Configuration Configuration
+  const CONFIG = {
+    moveThreshold: 11.5,     // Total combined acceleration force to read running in place
+    shakeThreshold: 24.0,    // Hard threshold spike for registering weapon swings
+    attackCooldown: 600,     // Milliseconds between allowed weapon swings
+    attackRange: 80,         // Distance buffer (pixels) between bounding boxes to trigger combat
+    friction: 0.92,          // Inertial dampening for real-time movement decay
+    speedStep: 0.4,          // Velocity unit gained per step
+    maxSpeed: 8              // Speed ceiling
+  };
 
-let posX = 100;
-let speed = 0;
+  // State Management Engine
+  let state = {
+    playerX: 0,
+    playerY: 0,
+    enemyX: 0,
+    playerSpeed: 0,
+    playerHP: 100,
+    enemyHP: 100,
+    lastAttackTime: 0,
+    isGameOver: false
+  };
 
-let enemyHP = 100;
-let lastShake = 0;
+  // DOM Cache
+  const DOM = {
+    overlay: document.getElementById('overlay'),
+    player: document.getElementById('player'),
+    enemy: document.getElementById('enemy'),
+    playerHPFill: document.getElementById('player-hp-fill'),
+    enemyHPFill: document.getElementById('enemy-hp-fill'),
+    combatLog: document.getElementById('combat-log'),
+    debug: document.getElementById('screen-log')
+  };
 
-async function startMotion() {
-  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-    try {
-      const response = await DeviceMotionEvent.requestPermission();
-      if (response === 'granted') {
-        enableMotion();
-      } else {
-        alert("Permission denied. I need sensors to play!");
-      }
-    } catch (e) {
-      console.error(e);
+  // Safe Setup Framework
+  function initializeGame() {
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      DeviceMotionEvent.requestPermission()
+        .then(response => {
+          if (response === 'granted') {
+            setupEngine();
+          } else {
+            alert("Motion permissions denied. Game cannot process steps.");
+          }
+        })
+        .catch(console.error);
+    } else {
+      setupEngine(); // Fallback for desktop testing or devices missing permission walls
     }
-  } else {
-    // Non-iOS or older browsers
-    enableMotion();
-  }
-}
-
-function enableMotion() {
-  window.addEventListener("devicemotion", handleMotion);
-}
-
-function handleMotion(event) {
-  // 1. Switch to 'acceleration' (this excludes gravity)
-  let acc = event.acceleration; 
-
-  if (!acc || acc.x === null) {
-    // Fallback: If 'acceleration' isn't supported, use gravity but increase the threshold
-    acc = event.accelerationIncludingGravity;
   }
 
-  let x = acc.x || 0;
-  let y = acc.y || 0;
-  let z = acc.z || 0;
+  function setupEngine() {
+    DOM.overlay.style.display = 'none';
+    
+    // Set dynamic startup layout locations
+    const containerWidth = window.innerWidth;
+    state.playerX = containerWidth * 0.1;
+    state.enemyX = containerWidth - (containerWidth * 0.1) - 60; // Adjust tracking for sprite sizing offset
+    
+    DOM.player.style.left = `${state.playerX}px`;
+    DOM.enemy.style.left = `${state.enemyX}px`;
 
-  let force = Math.abs(x) + Math.abs(y) + Math.abs(z);
+    window.addEventListener('devicemotion', processMotion, false);
+    
+    // Desktop Simulation Control Fallback for Testing
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') simulatedStep();
+      if (e.code === 'KeyA') simulatedShake();
+    });
 
-  // 2. Adjust your thresholds
-  // Without gravity, "12" is actually quite a hard move. 
-  // Try lowering this to 3 or 4 for walking.
-  if (force > 3) { 
-    speed = Math.min(speed + 0.5, 5);
-  } else {
-    speed *= 0.9;
+    // Run Engine Loops
+    requestAnimationFrame(gameLoop);
   }
 
-  posX += speed;
-  player.style.left = posX + "px";
+  // Pure Motion Processing Engine
+  function processMotion(event) {
+    if (state.isGameOver) return;
 
-  // 3. Shake threshold
-  // Without gravity, a shake is usually > 15
-  let now = Date.now();
-  if (force > 15 && (now - lastShake > 1000)) {
-    lastShake = now;
-    attackEnemy();
+    let acc = event.accelerationIncludingGravity;
+    if (!acc) return;
+
+    let x = acc.x || 0;
+    let y = acc.y || 0;
+    let z = acc.z || 0;
+
+    // Calculate Vector Magnitude
+    let totalForce = Math.sqrt(x*x + y*y + z*z);
+
+    // Dynamic Debug Logging Matrix
+    DOM.debug.innerHTML = `FORCE: ${totalForce.toFixed(2)}<br>X: ${x.toFixed(1)} | Y: ${y.toFixed(1)} | Z: ${z.toFixed(1)}`;
+
+    // Process Run Movement Tracker
+    if (totalForce > CONFIG.moveThreshold) {
+      state.playerSpeed = Math.min(state.playerSpeed + CONFIG.speedStep, CONFIG.maxSpeed);
+    }
+
+    // Process Shake Attack Tracker
+    if (totalForce > CONFIG.shakeThreshold) {
+      attemptAttack();
+    }
   }
-}
 
-function attackEnemy() {
-  enemyHP -= 10;
-  if (enemyHP < 0) enemyHP = 0;
+  // Simulated triggers for cross-device manual checking
+  function simulatedStep() {
+    state.playerSpeed = Math.min(state.playerSpeed + 2.5, CONFIG.maxSpeed);
+  }
+  function simulatedShake() {
+    attemptAttack();
+  }
 
-  hpBar.style.width = enemyHP + "%";
+  // Combat Execution Pipeline
+  function attemptAttack() {
+    let now = Date.now();
+    if (now - state.lastAttackTime < CONFIG.attackCooldown) return;
+    
+    state.lastAttackTime = now;
 
-  alert("💥 Attack! Enemy HP: " + enemyHP);
-}
+    // Distance Metric Validation (Collision Check)
+    let separation = state.enemyX - (state.playerX + 60);
+
+    if (separation <= CONFIG.attackRange) {
+      executeMeleeStrike();
+    } else {
+      DOM.combatLog.textContent = "❌ Too far away! Keep moving closer!";
+      DOM.combatLog.style.color = "#ffaa00";
+    }
+  }
+
+  function executeMeleeStrike() {
+    // Attack Animation
+    DOM.player.classList.remove('attack-bounce');
+    void DOM.player.offsetWidth; // Force hardware CSS update trigger
+    DOM.player.classList.add('attack-bounce');
+
+    // Damage calculation and animation on enemy target
+    state.enemyHP = Math.max(state.enemyHP - 15, 0);
+    DOM.enemyHPFill.style.width = `${state.enemyHP}%`;
+    
+    DOM.enemy.classList.remove('damage-flash');
+    void DOM.enemy.offsetWidth;
+    DOM.enemy.classList.add('damage-flash');
+
+    DOM.combatLog.textContent = `💥 Critical Hit! Enemy HP: ${state.enemyHP}%`;
+    DOM.combatLog.style.color = varColor('--primary');
+
+    if (state.enemyHP <= 0) {
+      endGame(true);
+    }
+  }
+
+  // Core Frame Pipeline Tick
+  let lastTime = 0;
+  function gameLoop(timestamp) {
+    if (state.isGameOver) return;
+
+    // Handle smooth friction decay physics
+    state.playerSpeed *= CONFIG.friction;
+    if (state.playerSpeed < 0.05) state.playerSpeed = 0;
+
+    // Boundary constraint mapping
+    let maxAllowedX = state.enemyX - CONFIG.attackRange;
+    state.playerX += state.playerSpeed;
+
+    if (state.playerX > maxAllowedX) {
+      state.playerX = maxAllowedX;
+      state.playerSpeed = 0;
+    }
+
+    // Write to Layout Render Engine
+    DOM.player.style.left = `${state.playerX}px`;
+
+    requestAnimationFrame(gameLoop);
+  }
+
+  function endGame(victory) {
+    state.isGameOver = true;
+    window.removeEventListener('devicemotion', processMotion);
+    
+    if (victory) {
+      DOM.combatLog.textContent = "🏆 VICTORY! Dark Boss Defeated!";
+      DOM.combatLog.style.color = varColor('--primary');
+    }
+    
+    // Present Reset Interactive Flow after delay
+    setTimeout(() => {
+      DOM.overlay.innerHTML = `
+        <h1>${victory ? 'Quest Clear!' : 'Defeat'}</h1>
+        <p style="color: #aaa; margin-bottom: 20px;">Performance logged safely.</p>
+        <button class="cta-btn" onclick="window.location.reload()">PLAY AGAIN</button>
+      `;
+      DOM.overlay.style.display = 'flex';
+    }, 1500);
+  }
+
+  // Inline CSS variable extractor helper
+  function varColor(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
 </script>
 
 </body>
