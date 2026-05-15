@@ -75,17 +75,18 @@
       box-shadow: 0 6px 20px rgba(0, 255, 102, 0.4);
     }
 
-    /* --- CRITICAL: FIXES FOR YOUR NEW CHARACTER IMAGE --- */
+    /* --- EXPANDED SPRITE ENGINE SYSTEM FOR WALK CYCLES --- */
     #player {
       position: absolute;
-      width: 100px;           /* Increased window viewport size for your detailed character */
+      width: 100px;      
       height: 100px;          
       will-change: left, top;
       background-image: url('assets/hero-sprite.png'); 
       background-repeat: no-repeat;
-      background-size: 300% 400%;   /* Maps perfectly to your 3x4 grid sheet matrix layout */
-      background-position: 50% 0%;  /* Centers perfectly on the front idle drawing */
-      image-rendering: pixelated;   /* Keeps lines clean and crisp on high-res mobile devices */
+      /* Expanded to a 7x4 matrix mapping grid system (includes walking stages) */
+      background-size: 700% 400%;   
+      background-position: 0% 0%;  
+      image-rendering: pixelated;   
       image-rendering: crisp-edges;
       z-index: 5;
     }
@@ -99,6 +100,17 @@
       border-radius: 14px;
       box-shadow: 0 0 25px rgba(255, 51, 51, 0.6);
       transition: transform 0.2s;
+    }
+
+    /* --- FIREBALL BULLET LOOKS --- */
+    .fireball {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      background: radial-gradient(circle, #ffea00 10%, #ff5500 60%, transparent 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 15px #ff3300;
+      z-index: 6;
     }
 
     #powerup-item {
@@ -247,7 +259,9 @@
     accelerationGain: 0.7,
     velocityCap: 6.5,
     padRadius: 60,
-    animationSpeed: 110
+    animationSpeed: 100, // Faster tracking loops
+    fireballBaseSpeed: 4,
+    fireballInterval: 2200
   };
 
   let runtime = {
@@ -256,15 +270,21 @@
     currentSpeed: 0,
     pHP: 100, eHP: 100,
     lastAttack: 0, halted: true, padActive: false,
-    // Percentage indexing trackers for clean scaling alignment
-    currentFrameIndex: 1, currentDirectionRow: 0, lastFrameUpdateTime: 0,
+    
+    // Total columns increased to 7 layout tiles per row
+    currentFrameIndex: 0, currentDirectionRow: 0, lastFrameUpdateTime: 0,
+    
     currentLevel: 1,
     hasPowerUpBoost: false,
     powerX: 0, powerY: 0,
-    powerSpawned: false
+    powerSpawned: false,
+    
+    fireballs: [],
+    lastFireballTime: 0
   };
 
   const UI = {
+    container: document.getElementById('game-container'),
     overlay: document.getElementById('overlay'),
     title: document.getElementById('menu-title'),
     safety: document.getElementById('safety-box'),
@@ -294,10 +314,15 @@
     UI.overlay.style.display = 'none';
     runtime.halted = false;
     
+    runtime.pHP = 100;
+    UI.pFill.style.width = '100%';
     runtime.pX = window.innerWidth * 0.15;
     runtime.pY = window.innerHeight / 2 - 50;
+    
+    clearActiveFireballs();
     resetBossForLevel();
 
+    window.removeEventListener('devicemotion', evaluateDeviceSensors);
     window.addEventListener('devicemotion', evaluateDeviceSensors, false);
     buildJoystickControl();
 
@@ -326,6 +351,11 @@
     refreshViewportLayouts();
   }
 
+  function clearActiveFireballs() {
+    runtime.fireballs.forEach(f => { if(f.el) f.el.remove(); });
+    runtime.fireballs = [];
+  }
+
   function spawnPowerUpRandomly() {
     runtime.powerSpawned = true;
     runtime.hasPowerUpBoost = false;
@@ -340,7 +370,7 @@
     UI.power.style.top = `${runtime.powerY}px`;
     UI.power.style.display = 'block';
     
-    UI.status.textContent = "⚡ Power-Up telah muncul! Cari dan ambil!";
+    UI.status.textContent = "⚡ Power-Up telah muncul! Elak fireball dan ambil!";
     UI.status.style.color = "var(--powerup)";
   }
 
@@ -408,13 +438,14 @@
 
     runtime.currentSpeed *= SETTINGS.frictionFactor;
 
+    // Frame Index selector supports walking cycles (Frames 0 to 6)
     if (runtime.currentSpeed < 0.1) {
       runtime.currentSpeed = 0;
-      runtime.currentFrameIndex = 1; 
+      runtime.currentFrameIndex = 0; // Default center frame
     } else {
       if (timestamp - runtime.lastFrameUpdateTime > SETTINGS.animationSpeed) {
         runtime.lastFrameUpdateTime = timestamp;
-        runtime.currentFrameIndex = (runtime.currentFrameIndex + 1) % 3;
+        runtime.currentFrameIndex = (runtime.currentFrameIndex + 1) % 7; 
       }
     }
 
@@ -423,6 +454,13 @@
 
     runtime.pX = Math.max(0, Math.min(window.innerWidth - 100, runtime.pX));
     runtime.pY = Math.max(0, Math.min(window.innerHeight - 100, runtime.pY));
+
+    // Handle Fireball Combat Loops for Levels 2 & 3
+    if ((runtime.currentLevel === 2 || runtime.currentLevel === 3) && timestamp - runtime.lastFireballTime > SETTINGS.fireballInterval) {
+      runtime.lastFireballTime = timestamp;
+      createFireballProjectile();
+    }
+    updateFireballsLoop();
 
     if (runtime.powerSpawned && !runtime.hasPowerUpBoost) {
       let dx = (runtime.pX + 50) - (runtime.powerX + 20);
@@ -442,17 +480,82 @@
     requestAnimationFrame(engineFrameTick);
   }
 
+  function createFireballProjectile() {
+    let fbEl = document.createElement('div');
+    fbEl.className = 'fireball';
+    fbEl.style.left = `${runtime.eX + 20}px`;
+    fbEl.style.top = `${runtime.eY + 20}px`;
+    UI.container.appendChild(fbEl);
+
+    // Track targets dynamically
+    let targetX = runtime.pX + 50;
+    let targetY = runtime.pY + 50;
+    let angle = Math.atan2(targetY - (runtime.eY + 20), targetX - (runtime.eX + 20));
+
+    runtime.fireballs.push({
+      el: fbEl,
+      x: runtime.eX + 20,
+      y: runtime.eY + 20,
+      vx: Math.cos(angle) * (SETTINGS.fireballBaseSpeed + runtime.currentLevel),
+      vy: Math.sin(angle) * (SETTINGS.fireballBaseSpeed + runtime.currentLevel)
+    });
+  }
+
+  function updateFireballsLoop() {
+    for (let i = runtime.fireballs.length - 1; i >= 0; i--) {
+      let f = runtime.fireballs[i];
+      f.x += f.vx;
+      f.y += f.vy;
+      f.el.style.left = `${f.x}px`;
+      f.el.style.top = `${f.y}px`;
+
+      // Check boundary bounds
+      if (f.x < -50 || f.x > window.innerWidth + 50 || f.y < -50 || f.y > window.innerHeight + 50) {
+        f.el.remove();
+        runtime.fireballs.splice(i, 1);
+        continue;
+      }
+
+      // Check collision with Player
+      let dx = f.x - (runtime.pX + 50);
+      let dy = f.y - (runtime.pY + 50);
+      let dist = Math.sqrt(dx*dx + dy*dy);
+
+      if (dist < 45) { // Collision hit registered
+        f.el.remove();
+        runtime.fireballs.splice(i, 1);
+        
+        runtime.pHP = Math.max(runtime.pHP - 15, 0);
+        UI.pFill.style.width = `${runtime.pHP}%`;
+        UI.player.classList.remove('hurt-flash'); void UI.player.offsetWidth; UI.player.classList.add('hurt-flash');
+        
+        UI.status.textContent = `🔥 Anda terkena Fireball! HP Hero berkurang!`;
+        UI.status.style.color = "var(--danger)";
+
+        if (runtime.pHP <= 0) {
+          handleGameOverLifeLoss();
+        }
+      }
+    }
+  }
+
+  function handleGameOverLifeLoss() {
+    runtime.halted = true;
+    clearActiveFireballs();
+    UI.title.textContent = "💥 GAME OVER!";
+    UI.desc.textContent = "Tenaga Hero anda telah habis! Mari cuba lagi untuk kecergasan anda.";
+    UI.btn.textContent = "CUBA SEMULA LEVEL";
+    UI.overlay.style.display = 'flex';
+  }
+
   function refreshViewportLayouts() {
     UI.player.style.left = `${runtime.pX}px`;
     UI.player.style.top = `${runtime.pY}px`;
     UI.enemy.style.left = `${runtime.eX}px`;
     UI.enemy.style.top = `${runtime.eY}px`;
 
-    // FIXED MATRIX MATCHING FOR YOUR GENERATED SPRITE SHEET
-    let xPercentage = 0;
-    if (runtime.currentFrameIndex === 0) xPercentage = 0;   // Left foot frame
-    if (runtime.currentFrameIndex === 1) xPercentage = 50;  // Center idle frame
-    if (runtime.currentFrameIndex === 2) xPercentage = 100; // Right foot frame
+    // 7 Columns Grid Matrix mapping percentage computation (100 / 6 = 16.666%)
+    let xPercentage = runtime.currentFrameIndex * 16.666;
     
     let yPercentage = 0;
     if (runtime.currentDirectionRow === 0) yPercentage = 0;      // Row 1: Down (0%)
@@ -496,7 +599,7 @@
 
   function progressCampaignLevel() {
     runtime.halted = true;
-    window.removeEventListener('devicemotion', evaluateDeviceSensors);
+    clearActiveFireballs();
 
     if (runtime.currentLevel < 3) {
       runtime.currentLevel++;
@@ -504,8 +607,8 @@
         UI.title.textContent = `LEVEL ${runtime.currentLevel} BERMULA!`;
         UI.safety.style.display = 'none'; 
         UI.desc.innerHTML = runtime.currentLevel === 2 
-          ? "<b>Amaran Level 2:</b> Boss kini mempunyai perisai kebal! Sila kutip kristal kuning rawak di dalam peta untuk memecah perisai tersebut!"
-          : "<b>Amaran Level 3 (Peringkat Akhir):</b> Kuasa Boss bertambah kuat! Ambil kristal kuning dengan cepat untuk menumbangkan Boss!";
+          ? "<b>Amaran Level 2:</b> Boss kini mula menembak <b>Fireball</b> dan perisai kebal aktif! Ambil kristal kuning!"
+          : "<b>Amaran Level 3 (Akhir):</b> Tembakan Fireball menjadi lebih laju! Ambil kristal kuning segera!";
         UI.btn.textContent = `PROSES KE LEVEL ${runtime.currentLevel}`;
         UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
         UI.overlay.style.display = 'flex';
