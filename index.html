@@ -2,13 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FitQuest: Pixel RPG Edition</title>
+  <title>FitQuest: Campaign Edition</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
   <style>
     :root {
       --primary: #00ff66;
       --danger: #ff3333;
+      --powerup: #ffea00;
       --bg: #0d0e12;
       --panel: rgba(22, 24, 33, 0.9);
     }
@@ -37,6 +38,7 @@
       overflow: hidden;
     }
 
+    /* Screen Overlays */
     #overlay {
       position: absolute;
       top: 0;
@@ -53,6 +55,16 @@
       text-align: center;
     }
 
+    /* Safety Warning Banner Customization */
+    .safety-warning-box {
+      background: rgba(255, 51, 51, 0.1);
+      border: 2px dashed var(--danger);
+      border-radius: 12px;
+      padding: 15px;
+      margin: 20px 0;
+      max-width: 320px;
+    }
+
     .cta-btn {
       background: linear-gradient(135deg, var(--primary) 0%, #00b347 100%);
       border: none;
@@ -65,45 +77,52 @@
       box-shadow: 0 6px 20px rgba(0, 255, 102, 0.4);
     }
 
-    /* --- THE SPRITE SHEET ENGINE ANIMATION CSS --- */
+    /* Rendering Nodes */
     .sprite {
       position: absolute;
-      /* The bounding viewport box showing exactly one frame at a time */
       width: 64px; 
       height: 64px; 
       will-change: left, top;
     }
 
     #player {
-      /* Dynamic direct link to a standard 4x3 character grid asset sheet */
+      /* Replace this placeholder URL with your Raw GitHub image link later */
       background-image: url('https://files.catbox.moe/gcl236.png'); 
       background-repeat: no-repeat;
-      
-      /* Scale the sheet cleanly to match a grid layout: 3 columns wide (192px), 4 rows tall (256px) */
       background-size: 192px 256px; 
-      background-position: 0px 0px; 
-      
-      /* CRITICAL FOR RETRO RPG PIXEL ART: Stops mobile browsers from blurring tiny image scales */
+      background-position: -64px 0px; 
       image-rendering: pixelated;
       image-rendering: crisp-edges;
+      z-index: 5;
     }
 
     #enemy {
       background: linear-gradient(135deg, var(--danger) 0%, #800000 100%);
       border-radius: 14px;
       box-shadow: 0 0 25px rgba(255, 51, 51, 0.6);
+      transition: transform 0.2s;
     }
 
-    /* Attack & Hurt Feedbacks */
+    /* Dynamic Power-Up Rendering Object */
+    #powerup-item {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: radial-gradient(circle, var(--powerup) 0%, #ff8800 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 20px var(--powerup);
+      display: none; /* Controlled via JS states */
+      z-index: 4;
+    }
+
+    /* Structural Feedback Frames */
     .attack-pulse { animation: hitPulse 0.2s ease-out; }
     .hurt-flash { animation: redFlash 0.15s ease-in-out 2; }
+    .float-item { animation: bounceItem 0.8s infinite alternate ease-in-out; }
 
-    @keyframes hitPulse {
-      50% { transform: scale(1.3); filter: brightness(1.4); }
-    }
-    @keyframes redFlash {
-      50% { opacity: 0.3; filter: brightness(2.5); }
-    }
+    @keyframes hitPulse { 50% { transform: scale(1.3); filter: brightness(1.4); } }
+    @keyframes redFlash { 50% { opacity: 0.3; filter: brightness(2.5); } }
+    @keyframes bounceItem { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
 
     /* UI Layout Overlays */
     #ui-layer {
@@ -121,12 +140,22 @@
     }
 
     .top-bar { display: flex; justify-content: space-between; width: 100%; }
-    .hp-housing { width: 40%; }
-    .hp-label { font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px; color: #8f94a6; }
+    .hp-housing { width: 38%; }
+    .hp-label { font-size: 0.75rem; text-transform: uppercase; margin-bottom: 6px; color: #8f94a6; font-weight: bold; }
     .hp-track { width: 100%; height: 12px; background: #1f222e; border-radius: 6px; overflow: hidden; }
     .hp-fill { height: 100%; width: 100%; transition: width 0.15s ease-out; }
     #p-fill { background: linear-gradient(90deg, #00ff66, #00bcff); }
     #e-fill { background: linear-gradient(90deg, #ff3333, #ffaa00); }
+
+    #level-badge {
+      background: #1f222e;
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: var(--powerup);
+    }
 
     .control-deck {
       width: 100%;
@@ -170,15 +199,24 @@
 
 <div id="game-container">
   <div id="overlay">
-    <h1>PIXEL QUEST ARENA</h1>
-    <p style="color: #7e8494; margin-bottom: 35px; max-width: 290px; font-size: 0.95rem; line-height: 1.5;">
-      Aim with the joystick and jog in place to animate and move your pixel hero!
+    <h1 id="menu-title">FITQUEST: CAMPAIGN</h1>
+    
+    <div class="safety-warning-box" id="safety-box">
+      <b style="color: var(--danger); text-transform: uppercase; font-size: 0.9rem;">⚠️ KESELAMATAN / SAFETY WARNING:</b>
+      <p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 0.82rem; line-height: 1.4;">
+        Sila pastikan kawasan sekeliling anda lapang. <b>JANGAN</b> bermain di tepi longkang, jalan raya, atau tempat sempit yang boleh menyebabkan tersandung!
+      </p>
+    </div>
+
+    <p id="menu-desc" style="color: #7e8494; margin-bottom: 25px; max-width: 290px; font-size: 0.9rem;">
+      Gunakan joystick untuk haluan. Jog/berlari setempat untuk menggerakkan watak piksel anda!
     </p>
-    <button class="cta-btn" onclick="igniteEngine()">START EXERCISE</button>
+    <button class="cta-btn" id="action-btn" onclick="igniteEngine()">MULA KEMPEN</button>
   </div>
 
   <div id="player" class="sprite"></div>
   <div id="enemy" class="sprite"></div>
+  <div id="powerup-item" class="float-item"></div>
 
   <div id="joy-boundary">
     <div id="joy-stick"></div>
@@ -190,15 +228,16 @@
         <div class="hp-label">Hero Energy</div>
         <div class="hp-track"><div id="p-fill" class="hp-fill"></div></div>
       </div>
+      <div id="level-badge">LEVEL 1</div>
       <div class="hp-housing" style="text-align: right;">
-        <div class="hp-label">Target Boss</div>
+        <div class="hp-label">Boss Health</div>
         <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
       </div>
     </div>
 
     <div class="control-deck">
-      <div id="status-msg">Standby...</div>
-      <div class="exercise-metrics" id="motion-display">Step Power: 0.00 | Status: Idle</div>
+      <div id="status-msg">Sedia untuk beraksi...</div>
+      <div class="exercise-metrics" id="motion-display">Kadar Langkah: 0.00 | Status: Pegun</div>
     </div>
   </div>
 </div>
@@ -211,11 +250,10 @@
     hitBoxRange: 75,
     frictionFactor: 0.88,
     accelerationGain: 0.7,
-    velocityCap: 6.0,
+    velocityCap: 6.5,
     padRadius: 60,
-    // Frame Rates Config
-    spriteSize: 64,         // Dimension of one frame bounding box square (pixels)
-    animationSpeed: 120     // Milliseconds elapsed before switching to the next step drawing
+    spriteSize: 64,
+    animationSpeed: 110
   };
 
   let runtime = {
@@ -223,17 +261,26 @@
     steerX: 0, steerY: 0,
     currentSpeed: 0,
     pHP: 100, eHP: 100,
-    lastAttack: 0, halted: false, padActive: false,
-    // Animation Engine Tickers
-    currentFrameIndex: 0,   // Loop values: 0, 1, 2, or 1
-    currentDirectionRow: 0, // Sprite Sheet map: 0 = Down, 1 = Left, 2 = Right, 3 = Up
-    lastFrameUpdateTime: 0
+    lastAttack: 0, halted: true, padActive: false,
+    // Sprite state metrics
+    currentFrameIndex: 1, currentDirectionRow: 0, lastFrameUpdateTime: 0,
+    // Campaign level modifications
+    currentLevel: 1,
+    hasPowerUpBoost: false,
+    powerX: 0, powerY: 0,
+    powerSpawned: false
   };
 
   const UI = {
     overlay: document.getElementById('overlay'),
+    title: document.getElementById('menu-title'),
+    safety: document.getElementById('safety-box'),
+    desc: document.getElementById('menu-desc'),
+    btn: document.getElementById('action-btn'),
+    badge: document.getElementById('level-badge'),
     player: document.getElementById('player'),
     enemy: document.getElementById('enemy'),
+    power: document.getElementById('powerup-item'),
     pFill: document.getElementById('p-fill'),
     eFill: document.getElementById('e-fill'),
     status: document.getElementById('status-msg'),
@@ -252,20 +299,61 @@
 
   function setupEnvironment() {
     UI.overlay.style.display = 'none';
-    runtime.pX = window.innerWidth * 0.2;
-    runtime.pY = window.innerHeight / 2 - 32;
-    runtime.eX = window.innerWidth * 0.75;
-    runtime.eY = window.innerHeight / 2 - 32;
+    runtime.halted = false;
     
-    refreshViewportLayouts();
+    // Position resets
+    runtime.pX = window.innerWidth * 0.15;
+    runtime.pY = window.innerHeight / 2 - 32;
+    resetBossForLevel();
+
     window.addEventListener('devicemotion', evaluateDeviceSensors, false);
     buildJoystickControl();
 
-    // Keyboards hooks
+    // Keyboards hooks simulation fallbacks
+    window.removeEventListener('keydown', simulateHardwareDown);
     window.addEventListener('keydown', simulateHardwareDown);
+    window.removeEventListener('keyup', simulateHardwareUp);
     window.addEventListener('keyup', simulateHardwareUp);
 
     requestAnimationFrame(engineFrameTick);
+  }
+
+  function resetBossForLevel() {
+    runtime.eX = window.innerWidth * 0.75;
+    runtime.eY = window.innerHeight / 2 - 32;
+    runtime.eHP = 100;
+    runtime.hasPowerUpBoost = false;
+    UI.eFill.style.width = '100%';
+    UI.player.style.filter = 'none';
+
+    // Spawn power-up configurations for higher stages
+    if (runtime.currentLevel >= 2) {
+      spawnPowerUpRandomly();
+    } else {
+      runtime.powerSpawned = false;
+      UI.power.style.display = 'none';
+    }
+    refreshViewportLayouts();
+  }
+
+  // System 4: Randomized Power Up Grid Allocation placement
+  function spawnPowerUpRandomly() {
+    runtime.powerSpawned = true;
+    runtime.hasPowerUpBoost = false;
+    
+    // Keep positions bounded safely inside active play window borders
+    const horizontalMargin = window.innerWidth * 0.2;
+    const verticalMargin = window.innerHeight * 0.2;
+    
+    runtime.powerX = horizontalMargin + Math.random() * (window.innerWidth - horizontalMargin * 2 - 40);
+    runtime.powerY = verticalMargin + Math.random() * (window.innerHeight - verticalMargin * 2 - 40);
+
+    UI.power.style.left = `${runtime.powerX}px`;
+    UI.power.style.top = `${runtime.powerY}px`;
+    UI.power.style.display = 'block';
+    
+    UI.status.textContent = "⚡ Power-Up telah muncul! Cari dan ambil!";
+    UI.status.style.color = "var(--powerup)";
   }
 
   function buildJoystickControl() {
@@ -273,7 +361,7 @@
     const stick = UI.padStick;
 
     function trackInput(e) {
-      if (!runtime.padActive) return;
+      if (!runtime.padActive || runtime.halted) return;
       let targetTouch = e.touches ? e.touches[0] : e;
       let geoBox = bound.getBoundingClientRect();
       
@@ -290,12 +378,11 @@
       runtime.steerX = xOffset / SETTINGS.padRadius;
       runtime.steerY = yOffset / SETTINGS.padRadius;
 
-      // DYNAMIC SPRITE SHEET ROW PICKER
-      // Select row matching movement direction vector weights
+      // Directions mapping rows calculation matrix
       if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) {
-        runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1; // Row 2 = Right, Row 1 = Left
+        runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1; 
       } else {
-        runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3; // Row 0 = Down, Row 3 = Up
+        runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3; 
       }
     }
 
@@ -323,13 +410,13 @@
     if (totalMagnitude > SETTINGS.moveCutoff) {
       let workYield = (totalMagnitude - SETTINGS.moveCutoff) * SETTINGS.accelerationGain;
       runtime.currentSpeed = Math.min(runtime.currentSpeed + workYield, SETTINGS.velocityCap);
-      UI.motionInfo.textContent = `Step Power: ${totalMagnitude.toFixed(1)} | Status: Walking!`;
+      UI.motionInfo.textContent = `Langkah: ${totalMagnitude.toFixed(1)} | Bergerak`;
     }
 
     if (totalMagnitude > SETTINGS.shakeCutoff) processCombatStrike();
   }
 
-  // Continuous Frame Logic Processor Loop
+  // Engine Physics Tick Loops
   function engineFrameTick(timestamp) {
     if (runtime.halted) return;
 
@@ -337,15 +424,10 @@
 
     if (runtime.currentSpeed < 0.1) {
       runtime.currentSpeed = 0;
-      UI.motionInfo.textContent = "Status: Idle (Exercise to walk)";
-      // Reset character to standing still (Middle Column frame = index 1)
-      runtime.currentFrameIndex = 1;
+      runtime.currentFrameIndex = 1; // Middle Standing Idle frame allocation
     } else {
-      // HANDLE PIXEL STEP IMAGE SWAPPING LOGIC ACCORDING TO VELOCITY PUMP RATES
       if (timestamp - runtime.lastFrameUpdateTime > SETTINGS.animationSpeed) {
         runtime.lastFrameUpdateTime = timestamp;
-        
-        // This advances the drawing column sequence from left to right across the sheet
         runtime.currentFrameIndex = (runtime.currentFrameIndex + 1) % 3;
       }
     }
@@ -353,8 +435,24 @@
     runtime.pX += runtime.steerX * runtime.currentSpeed;
     runtime.pY += runtime.steerY * runtime.currentSpeed;
 
+    // Boundary maps constraints
     runtime.pX = Math.max(0, Math.min(window.innerWidth - 64, runtime.pX));
     runtime.pY = Math.max(0, Math.min(window.innerHeight - 64, runtime.pY));
+
+    // Handle Power-Up collision processing overlaps
+    if (runtime.powerSpawned && !runtime.hasPowerUpBoost) {
+      let dx = (runtime.pX + 32) - (runtime.powerX + 20);
+      let dy = (runtime.pY + 32) - (runtime.powerY + 20);
+      let pDist = Math.sqrt(dx*dx + dy*dy);
+      
+      if (pDist < 45) {
+        runtime.hasPowerUpBoost = true;
+        UI.power.style.display = 'none';
+        UI.player.style.filter = 'drop-shadow(0px 0px 8px #ffea00) brightness(1.2)';
+        UI.status.textContent = `⚡ POWERED UP! Serangan anda kini berkuasa tinggi!`;
+        UI.status.style.color = 'var(--powerup)';
+      }
+    }
 
     refreshViewportLayouts();
     requestAnimationFrame(engineFrameTick);
@@ -366,31 +464,9 @@
     UI.enemy.style.left = `${runtime.eX}px`;
     UI.enemy.style.top = `${runtime.eY}px`;
 
-    // --- SPRITE POSITION CALCULATIONS MAPS ---
-    // Slide the coordinates background view window around the master png grid asset sheet
     let xPixelShift = runtime.currentFrameIndex * SETTINGS.spriteSize;
     let yPixelShift = runtime.currentDirectionRow * SETTINGS.spriteSize;
-    
     UI.player.style.backgroundPosition = `-${xPixelShift}px -${yPixelShift}px`;
-  }
-
-  // Keyboard fallbacks simulator
-  let testKeys = {};
-  function simulateHardwareDown(e) {
-    testKeys[e.code] = true;
-    if (e.code === 'ShiftLeft' || e.code === 'Space') runtime.currentSpeed = Math.min(runtime.currentSpeed + 2.0, SETTINGS.velocityCap);
-    if (e.code === 'KeyE') processCombatStrike();
-    mapSimulatedSteering();
-  }
-  function simulateHardwareUp(e) { testKeys[e.code] = false; mapSimulatedSteering(); }
-  function mapSimulatedSteering() {
-    if (runtime.padActive) return;
-    runtime.steerX = (testKeys['KeyD'] || testKeys['ArrowRight'] ? 1 : 0) - (testKeys['KeyA'] || testKeys['ArrowLeft'] ? 1 : 0);
-    runtime.steerY = (testKeys['KeyS'] || testKeys['ArrowDown'] ? 1 : 0) - (testKeys['KeyW'] || testKeys['ArrowUp'] ? 1 : 0);
-    if (runtime.steerX !== 0 || runtime.steerY !== 0) {
-      if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1;
-      else runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3;
-    }
   }
 
   function processCombatStrike() {
@@ -400,14 +476,79 @@
     runtime.lastAttack = timeStamp;
 
     let distanceVector = Math.sqrt(((runtime.eX + 32) - (runtime.pX + 32))**2 + ((runtime.eY + 32) - (runtime.pY + 32))**2);
+    
     if (distanceVector <= SETTINGS.hitBoxRange + 40) {
+      // System 4 Modification: Levels 2&3 require picking up power-up to deal damage
+      if (runtime.currentLevel >= 2 && !runtime.hasPowerUpBoost) {
+        UI.status.textContent = "🛡️ Kebal! Boss tersenyum. Anda mesti mencari Power-Up dahulu!";
+        UI.status.style.color = "var(--danger)";
+        return;
+      }
+
+      // Calculate Damage modifications bases
+      let dmg = runtime.hasPowerUpBoost ? 34 : 20; 
+      
       UI.player.classList.remove('attack-pulse'); void UI.player.offsetWidth; UI.player.classList.add('attack-pulse');
-      runtime.eHP = Math.max(runtime.eHP - 20, 0); UI.eFill.style.width = `${runtime.eHP}%`;
+      runtime.eHP = Math.max(runtime.eHP - dmg, 0); 
+      UI.eFill.style.width = `${runtime.eHP}%`;
       UI.enemy.classList.remove('hurt-flash'); void UI.enemy.offsetWidth; UI.enemy.classList.add('hurt-flash');
-      UI.status.textContent = `💥 Smacked Boss! Enemy HP: ${runtime.eHP}%`;
-      if (runtime.eHP <= 0) { runtime.halted = true; UI.status.textContent = "🏆 QUEST COMPLETED!"; }
+      
+      UI.status.textContent = `💥 Serangan Berjaya! HP Boss: ${runtime.eHP}%`;
+      UI.status.style.color = "var(--primary)";
+
+      if (runtime.eHP <= 0) progressCampaignLevel();
     } else {
-      UI.status.textContent = "❌ Out of range! Get closer!";
+      UI.status.textContent = "❌ Terlalu jauh! Dekati boss sambil berlari!";
+    }
+  }
+
+  // System 1: Progression Mapping Logic Loops
+  function progressCampaignLevel() {
+    runtime.halted = true;
+    window.removeEventListener('devicemotion', evaluateDeviceSensors);
+
+    if (runtime.currentLevel < 3) {
+      runtime.currentLevel++;
+      setTimeout(() => {
+        UI.title.textContent = `LEVEL ${runtime.currentLevel} BERMULA!`;
+        UI.safety.style.display = 'none'; // Only display warning on level 1 landing load
+        UI.desc.innerHTML = runtime.currentLevel === 2 
+          ? "<b>Amaran Level 2:</b> Boss kini mempunyai perisai kebal! Sila kutip kristal kuning rawak di dalam peta untuk memecah perisai tersebut!"
+          : "<b>Amaran Level 3 (Peringkat Akhir):</b> Kuasa Boss bertambah kuat! Ambil kristal kuning dengan cepat untuk menumbangkan Boss!";
+        UI.btn.textContent = `PROSES KE LEVEL ${runtime.currentLevel}`;
+        UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
+        UI.overlay.style.display = 'flex';
+      }, 1000);
+    } else {
+      // Victory state reached
+      setTimeout(() => {
+        UI.title.textContent = "🏆 TAHNIAH! KEMPEN SELESAI!";
+        UI.safety.style.display = 'none';
+        UI.desc.textContent = "Anda telah berjaya menyelesaikan kesemua 3 Level senaman dengan cemerlang!";
+        UI.btn.textContent = "MAIN SEMULA KEMPEN";
+        runtime.currentLevel = 1;
+        UI.badge.textContent = `LEVEL 1`;
+        UI.overlay.style.display = 'flex';
+      }, 1000);
+    }
+  }
+
+  // Keyboard alternative simulators debug hooks
+  let testKeys = {};
+  function simulateHardwareDown(e) {
+    testKeys[e.code] = true;
+    if (e.code === 'ShiftLeft' || e.code === 'Space') runtime.currentSpeed = Math.min(runtime.currentSpeed + 2.0, SETTINGS.velocityCap);
+    if (e.code === 'KeyE') processCombatStrike();
+    mapSimulatedSteering();
+  }
+  function simulateHardwareUp(e) { testKeys[e.code] = false; mapSimulatedSteering(); }
+  function mapSimulatedSteering() {
+    if (runtime.padActive || runtime.halted) return;
+    runtime.steerX = (testKeys['KeyD'] || testKeys['ArrowRight'] ? 1 : 0) - (testKeys['KeyA'] || testKeys['ArrowLeft'] ? 1 : 0);
+    runtime.steerY = (testKeys['KeyS'] || testKeys['ArrowDown'] ? 1 : 0) - (testKeys['KeyW'] || testKeys['ArrowUp'] ? 1 : 0);
+    if (runtime.steerX !== 0 || runtime.steerY !== 0) {
+      if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1;
+      else runtime.currentDirectionRow = runtime.steerY > 0 ? 0 : 3;
     }
   }
 </script>
