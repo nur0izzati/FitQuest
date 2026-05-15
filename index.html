@@ -86,10 +86,15 @@
     }
 
     #player {
+      /* Points to your uploaded transparent sprite sheet */
       background-image: url('assets/hero-sprite.png'); 
       background-repeat: no-repeat;
-      background-size: 192px 256px; 
-      background-position: -64px 0px; 
+      
+      /* ADJUSTED: Fits the generated sheet dimensions nicely */
+      background-size: 300% 400%; 
+      background-position: 50% 0%; 
+      
+      /* Clean retro pixel scaling */
       image-rendering: pixelated;
       image-rendering: crisp-edges;
       z-index: 5;
@@ -251,10 +256,13 @@
     accelerationGain: 0.7,
     velocityCap: 6.5,
     padRadius: 60,
-    spriteSize: 64,
+    
+    // CHANGE THIS LINE: Matches the bounding box of the generated sheet
+    spriteSize: 341,         
+    
     animationSpeed: 110
   };
-
+  
   let runtime = {
     pX: 0, pY: 0, eX: 0, eY: 0,
     steerX: 0, steerY: 0,
