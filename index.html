@@ -38,7 +38,6 @@
       overflow: hidden;
     }
 
-    /* Screen Overlays */
     #overlay {
       position: absolute;
       top: 0;
@@ -55,7 +54,6 @@
       text-align: center;
     }
 
-    /* Safety Warning Banner Customization */
     .safety-warning-box {
       background: rgba(255, 51, 51, 0.1);
       border: 2px dashed var(--danger);
@@ -77,37 +75,32 @@
       box-shadow: 0 6px 20px rgba(0, 255, 102, 0.4);
     }
 
-    /* Rendering Nodes */
-    .sprite {
-      position: absolute;
-      width: 64px; 
-      height: 64px; 
-      will-change: left, top;
-    }
-
+    /* --- CRITICAL: FIXES FOR YOUR NEW CHARACTER IMAGE --- */
     #player {
-      /* Points to your uploaded transparent sprite sheet */
+      position: absolute;
+      width: 100px;           /* Increased window viewport size for your detailed character */
+      height: 100px;          
+      will-change: left, top;
       background-image: url('assets/hero-sprite.png'); 
       background-repeat: no-repeat;
-      
-      /* ADJUSTED: Fits the generated sheet dimensions nicely */
-      background-size: 300% 400%; 
-      background-position: 50% 0%; 
-      
-      /* Clean retro pixel scaling */
-      image-rendering: pixelated;
+      background-size: 300% 400%;   /* Maps perfectly to your 3x4 grid sheet matrix layout */
+      background-position: 50% 0%;  /* Centers perfectly on the front idle drawing */
+      image-rendering: pixelated;   /* Keeps lines clean and crisp on high-res mobile devices */
       image-rendering: crisp-edges;
       z-index: 5;
     }
 
     #enemy {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      will-change: left, top;
       background: linear-gradient(135deg, var(--danger) 0%, #800000 100%);
       border-radius: 14px;
       box-shadow: 0 0 25px rgba(255, 51, 51, 0.6);
       transition: transform 0.2s;
     }
 
-    /* Dynamic Power-Up Rendering Object */
     #powerup-item {
       position: absolute;
       width: 40px;
@@ -115,11 +108,10 @@
       background: radial-gradient(circle, var(--powerup) 0%, #ff8800 100%);
       border-radius: 50%;
       box-shadow: 0 0 20px var(--powerup);
-      display: none; /* Controlled via JS states */
+      display: none;
       z-index: 4;
     }
 
-    /* Structural Feedback Frames */
     .attack-pulse { animation: hitPulse 0.2s ease-out; }
     .hurt-flash { animation: redFlash 0.15s ease-in-out 2; }
     .float-item { animation: bounceItem 0.8s infinite alternate ease-in-out; }
@@ -128,7 +120,6 @@
     @keyframes redFlash { 50% { opacity: 0.3; filter: brightness(2.5); } }
     @keyframes bounceItem { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
 
-    /* UI Layout Overlays */
     #ui-layer {
       position: absolute;
       top: 0;
@@ -218,8 +209,8 @@
     <button class="cta-btn" id="action-btn" onclick="igniteEngine()">MULA KEMPEN</button>
   </div>
 
-  <div id="player" class="sprite"></div>
-  <div id="enemy" class="sprite"></div>
+  <div id="player"></div>
+  <div id="enemy"></div>
   <div id="powerup-item" class="float-item"></div>
 
   <div id="joy-boundary">
@@ -256,22 +247,17 @@
     accelerationGain: 0.7,
     velocityCap: 6.5,
     padRadius: 60,
-    
-    // CHANGE THIS LINE: Matches the bounding box of the generated sheet
-    spriteSize: 341,         
-    
     animationSpeed: 110
   };
-  
+
   let runtime = {
     pX: 0, pY: 0, eX: 0, eY: 0,
     steerX: 0, steerY: 0,
     currentSpeed: 0,
     pHP: 100, eHP: 100,
     lastAttack: 0, halted: true, padActive: false,
-    // Sprite state metrics
+    // Percentage indexing trackers for clean scaling alignment
     currentFrameIndex: 1, currentDirectionRow: 0, lastFrameUpdateTime: 0,
-    // Campaign level modifications
     currentLevel: 1,
     hasPowerUpBoost: false,
     powerX: 0, powerY: 0,
@@ -308,15 +294,13 @@
     UI.overlay.style.display = 'none';
     runtime.halted = false;
     
-    // Position resets
     runtime.pX = window.innerWidth * 0.15;
-    runtime.pY = window.innerHeight / 2 - 32;
+    runtime.pY = window.innerHeight / 2 - 50;
     resetBossForLevel();
 
     window.addEventListener('devicemotion', evaluateDeviceSensors, false);
     buildJoystickControl();
 
-    // Keyboards hooks simulation fallbacks
     window.removeEventListener('keydown', simulateHardwareDown);
     window.addEventListener('keydown', simulateHardwareDown);
     window.removeEventListener('keyup', simulateHardwareUp);
@@ -333,7 +317,6 @@
     UI.eFill.style.width = '100%';
     UI.player.style.filter = 'none';
 
-    // Spawn power-up configurations for higher stages
     if (runtime.currentLevel >= 2) {
       spawnPowerUpRandomly();
     } else {
@@ -343,12 +326,10 @@
     refreshViewportLayouts();
   }
 
-  // System 4: Randomized Power Up Grid Allocation placement
   function spawnPowerUpRandomly() {
     runtime.powerSpawned = true;
     runtime.hasPowerUpBoost = false;
     
-    // Keep positions bounded safely inside active play window borders
     const horizontalMargin = window.innerWidth * 0.2;
     const verticalMargin = window.innerHeight * 0.2;
     
@@ -385,7 +366,6 @@
       runtime.steerX = xOffset / SETTINGS.padRadius;
       runtime.steerY = yOffset / SETTINGS.padRadius;
 
-      // Directions mapping rows calculation matrix
       if (Math.abs(runtime.steerX) > Math.abs(runtime.steerY)) {
         runtime.currentDirectionRow = runtime.steerX > 0 ? 2 : 1; 
       } else {
@@ -423,7 +403,6 @@
     if (totalMagnitude > SETTINGS.shakeCutoff) processCombatStrike();
   }
 
-  // Engine Physics Tick Loops
   function engineFrameTick(timestamp) {
     if (runtime.halted) return;
 
@@ -431,7 +410,7 @@
 
     if (runtime.currentSpeed < 0.1) {
       runtime.currentSpeed = 0;
-      runtime.currentFrameIndex = 1; // Middle Standing Idle frame allocation
+      runtime.currentFrameIndex = 1; 
     } else {
       if (timestamp - runtime.lastFrameUpdateTime > SETTINGS.animationSpeed) {
         runtime.lastFrameUpdateTime = timestamp;
@@ -442,17 +421,15 @@
     runtime.pX += runtime.steerX * runtime.currentSpeed;
     runtime.pY += runtime.steerY * runtime.currentSpeed;
 
-    // Boundary maps constraints
-    runtime.pX = Math.max(0, Math.min(window.innerWidth - 64, runtime.pX));
-    runtime.pY = Math.max(0, Math.min(window.innerHeight - 64, runtime.pY));
+    runtime.pX = Math.max(0, Math.min(window.innerWidth - 100, runtime.pX));
+    runtime.pY = Math.max(0, Math.min(window.innerHeight - 100, runtime.pY));
 
-    // Handle Power-Up collision processing overlaps
     if (runtime.powerSpawned && !runtime.hasPowerUpBoost) {
-      let dx = (runtime.pX + 32) - (runtime.powerX + 20);
-      let dy = (runtime.pY + 32) - (runtime.powerY + 20);
+      let dx = (runtime.pX + 50) - (runtime.powerX + 20);
+      let dy = (runtime.pY + 50) - (runtime.powerY + 20);
       let pDist = Math.sqrt(dx*dx + dy*dy);
       
-      if (pDist < 45) {
+      if (pDist < 55) {
         runtime.hasPowerUpBoost = true;
         UI.power.style.display = 'none';
         UI.player.style.filter = 'drop-shadow(0px 0px 8px #ffea00) brightness(1.2)';
@@ -471,9 +448,11 @@
     UI.enemy.style.left = `${runtime.eX}px`;
     UI.enemy.style.top = `${runtime.eY}px`;
 
-    let xPixelShift = runtime.currentFrameIndex * SETTINGS.spriteSize;
-    let yPixelShift = runtime.currentDirectionRow * SETTINGS.spriteSize;
-    UI.player.style.backgroundPosition = `-${xPixelShift}px -${yPixelShift}px`;
+    // Precision Percentage shifting matrices for 3x4 layout structures
+    let xPercentage = runtime.currentFrameIndex * 50;  // 0% -> 50% -> 100% (Columns 1, 2, 3)
+    let yPercentage = runtime.currentDirectionRow * 33.333; // Rows 1, 2, 3, 4
+    
+    UI.player.style.backgroundPosition = `${xPercentage}% ${yPercentage}%`;
   }
 
   function processCombatStrike() {
@@ -482,17 +461,15 @@
     if (timeStamp - runtime.lastAttack < SETTINGS.combatWindow) return;
     runtime.lastAttack = timeStamp;
 
-    let distanceVector = Math.sqrt(((runtime.eX + 32) - (runtime.pX + 32))**2 + ((runtime.eY + 32) - (runtime.pY + 32))**2);
+    let distanceVector = Math.sqrt(((runtime.eX + 32) - (runtime.pX + 50))**2 + ((runtime.eY + 32) - (runtime.pY + 50))**2);
     
-    if (distanceVector <= SETTINGS.hitBoxRange + 40) {
-      // System 4 Modification: Levels 2&3 require picking up power-up to deal damage
+    if (distanceVector <= SETTINGS.hitBoxRange + 50) {
       if (runtime.currentLevel >= 2 && !runtime.hasPowerUpBoost) {
         UI.status.textContent = "🛡️ Kebal! Boss tersenyum. Anda mesti mencari Power-Up dahulu!";
         UI.status.style.color = "var(--danger)";
         return;
       }
 
-      // Calculate Damage modifications bases
       let dmg = runtime.hasPowerUpBoost ? 34 : 20; 
       
       UI.player.classList.remove('attack-pulse'); void UI.player.offsetWidth; UI.player.classList.add('attack-pulse');
@@ -509,7 +486,6 @@
     }
   }
 
-  // System 1: Progression Mapping Logic Loops
   function progressCampaignLevel() {
     runtime.halted = true;
     window.removeEventListener('devicemotion', evaluateDeviceSensors);
@@ -518,7 +494,7 @@
       runtime.currentLevel++;
       setTimeout(() => {
         UI.title.textContent = `LEVEL ${runtime.currentLevel} BERMULA!`;
-        UI.safety.style.display = 'none'; // Only display warning on level 1 landing load
+        UI.safety.style.display = 'none'; 
         UI.desc.innerHTML = runtime.currentLevel === 2 
           ? "<b>Amaran Level 2:</b> Boss kini mempunyai perisai kebal! Sila kutip kristal kuning rawak di dalam peta untuk memecah perisai tersebut!"
           : "<b>Amaran Level 3 (Peringkat Akhir):</b> Kuasa Boss bertambah kuat! Ambil kristal kuning dengan cepat untuk menumbangkan Boss!";
@@ -527,7 +503,6 @@
         UI.overlay.style.display = 'flex';
       }, 1000);
     } else {
-      // Victory state reached
       setTimeout(() => {
         UI.title.textContent = "🏆 TAHNIAH! KEMPEN SELESAI!";
         UI.safety.style.display = 'none';
@@ -540,7 +515,6 @@
     }
   }
 
-  // Keyboard alternative simulators debug hooks
   let testKeys = {};
   function simulateHardwareDown(e) {
     testKeys[e.code] = true;
