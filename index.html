@@ -92,19 +92,22 @@
     }
 
     #enemy {
-      position: absolute;
-      width: 120px;
-      height: 120px;
-      background-image: url('assets/slime.png');
-      background-repeat: no-repeat;
-      background-size: contain;
-      background-position: center;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-      z-index: 5;
-      transform-origin: bottom center;
-      transition: width 0.3s, height 0.3s;
-    }
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        background-image: url('assets/slime.png');
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position: bottom center; /* CRITICAL: Keeps the slime's bottom flat on the ground when it squishes */
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+        z-index: 5;
+        transform-origin: bottom center;     /* Anchors the animation scaling to the floor */
+        transition: width 0.3s, height 0.3s;
+      
+        /* --- THE IDLE ANIMATION TRIGGER --- */
+        animation: slimeIdleAnimation 1.4s infinite alternate ease-in-out;
+      }
 
     /* --- SLIME PROJECTILE AND PUDDLE STYLES --- */
     .slime-glob {
@@ -147,6 +150,26 @@
     @keyframes redFlash { 50% { opacity: 0.3; filter: brightness(2.5); } }
     @keyframes bounceItem { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
     @keyframes meltIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    /* --- SQUISHY SLIME IDLE LOGIC --- */
+    @keyframes slimeIdleAnimation {
+      0% {
+        /* Normal resting shape, slightly floating or resting */
+        transform: scaleX(1) scaleY(1) translateY(0);
+      }
+      45% {
+        /* Stretches upward slightly as it gears up to bounce */
+        transform: scaleX(0.93) scaleY(1.07) translateY(-4px);
+      }
+      90% {
+        /* Drops down and squashes out flat against the floor */
+        transform: scaleX(1.18) scaleY(0.82) translateY(0);
+      }
+      100% {
+        /* Tiny pause at the flattest peak before bouncing back up */
+        transform: scaleX(1.2) scaleY(0.8) translateY(0);
+      }
+    }
 
     #ui-layer {
       position: absolute;
