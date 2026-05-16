@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FitQuest: Campaign Edition</title>
+  <title>FitQuest: Slime King Campaign</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
   <style>
@@ -10,6 +10,7 @@
       --primary: #00ff66;
       --danger: #ff3333;
       --powerup: #ffea00;
+      --slime-green: #39ff14;
       --bg: #0d0e12;
       --panel: rgba(22, 24, 33, 0.9);
     }
@@ -34,7 +35,7 @@
       position: relative;
       width: 100vw;
       height: 100vh;
-      background: radial-gradient(circle at center, #181b26 0%, #08090d 100%);
+      background: radial-gradient(circle at center, #1b2618 0%, #080d09 100%);
       overflow: hidden;
     }
 
@@ -44,7 +45,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(10, 11, 15, 0.98);
+      background: rgba(11, 15, 12, 0.98);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -64,7 +65,7 @@
     }
 
     .cta-btn {
-      background: linear-gradient(135deg, var(--primary) 0%, #00b347 100%);
+      background: linear-gradient(135deg, var(--slime-green) 0%, #00b347 100%);
       border: none;
       color: #000;
       padding: 16px 45px;
@@ -72,10 +73,9 @@
       font-weight: bold;
       border-radius: 30px;
       cursor: pointer;
-      box-shadow: 0 6px 20px rgba(0, 255, 102, 0.4);
+      box-shadow: 0 6px 20px rgba(57, 255, 20, 0.4);
     }
 
-    /* --- CRITICAL: KEEPING ORIGINAL 3x4 GRID STRUCTURAL SHEET --- */
     #player {
       position: absolute;
       width: 100px;           
@@ -87,34 +87,45 @@
       background-position: 50% 0%;  
       image-rendering: pixelated;   
       image-rendering: crisp-edges;
-      z-index: 5;
+      z-index: 6;
+      transition: filter 0.2s;
     }
 
     #enemy {
       position: absolute;
-      width: 96px;
-      height: 96px;
-    
+      width: 120px;
+      height: 120px;
       background-image: url('assets/slime.png');
       background-repeat: no-repeat;
       background-size: contain;
       background-position: center;
-    
       image-rendering: pixelated;
       image-rendering: crisp-edges;
-    
       z-index: 5;
+      transform-origin: bottom center;
+      transition: width 0.3s, height 0.3s;
     }
 
-    /* --- LEVEL 2 & 3 BOSS FIREBALL STYLE MAP --- */
-    .fireball {
+    /* --- SLIME PROJECTILE AND PUDDLE STYLES --- */
+    .slime-glob {
       position: absolute;
-      width: 26px;
-      height: 26px;
-      background: radial-gradient(circle, #fffb00 20%, #ff4500 70%, transparent 100%);
+      width: 28px;
+      height: 28px;
+      background: radial-gradient(circle, #ccff00 20%, #22aa00 80%, transparent 100%);
       border-radius: 50%;
-      box-shadow: 0 0 15px #ff3700;
-      z-index: 6;
+      box-shadow: 0 0 15px var(--slime-green);
+      z-index: 7;
+    }
+
+    .slime-puddle {
+      position: absolute;
+      width: 60px;
+      height: 25px;
+      background: rgba(57, 255, 20, 0.5);
+      border-radius: 50%;
+      box-shadow: 0 0 12px #22aa00;
+      z-index: 4;
+      animation: meltIn 0.3s ease-out;
     }
 
     #powerup-item {
@@ -135,6 +146,7 @@
     @keyframes hitPulse { 50% { transform: scale(1.3); filter: brightness(1.4); } }
     @keyframes redFlash { 50% { opacity: 0.3; filter: brightness(2.5); } }
     @keyframes bounceItem { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
+    @keyframes meltIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
     #ui-layer {
       position: absolute;
@@ -156,7 +168,7 @@
     .hp-track { width: 100%; height: 12px; background: #1f222e; border-radius: 6px; overflow: hidden; }
     .hp-fill { height: 100%; width: 100%; transition: width 0.15s ease-out; }
     #p-fill { background: linear-gradient(90deg, #00ff66, #00bcff); }
-    #e-fill { background: linear-gradient(90deg, #ff3333, #ffaa00); }
+    #e-fill { background: linear-gradient(90deg, var(--slime-green), #aa00ff); }
 
     #level-badge {
       background: #1f222e;
@@ -210,7 +222,7 @@
 
 <div id="game-container">
   <div id="overlay">
-    <h1 id="menu-title">FITQUEST: CAMPAIGN</h1>
+    <h1 id="menu-title">FITQUEST: SLIME KING</h1>
     
     <div class="safety-warning-box" id="safety-box">
       <b style="color: var(--danger); text-transform: uppercase; font-size: 0.9rem;">⚠️ KESELAMATAN / SAFETY WARNING:</b>
@@ -241,7 +253,7 @@
       </div>
       <div id="level-badge">LEVEL 1</div>
       <div class="hp-housing" style="text-align: right;">
-        <div class="hp-label">Boss Health</div>
+        <div class="hp-label">Slime King Health</div>
         <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
       </div>
     </div>
@@ -264,8 +276,9 @@
     velocityCap: 6.5,
     padRadius: 60,
     animationSpeed: 110,
-    fireballVelocity: 5,
-    fireballFrequency: 2500 // Time between shots in ms
+    slimeGlobVelocity: 4,
+    slimeAttackFrequency: 2200,
+    stickySlowFactor: 0.35 // Player loses 65% speed in mud, requires higher stepping/effort
   };
 
   let runtime = {
@@ -279,10 +292,12 @@
     hasPowerUpBoost: false,
     powerX: 0, powerY: 0,
     powerSpawned: false,
+    isStuckInSlime: false,
     
-    // Fireball tracker logic
-    fireballs: [],
-    lastFireballFired: 0
+    // Slime-specific runtime pools
+    slimeGlobs: [],
+    slimePuddles: [],
+    lastSlimeFired: 0
   };
 
   const UI = {
@@ -321,7 +336,7 @@
     runtime.pX = window.innerWidth * 0.15;
     runtime.pY = window.innerHeight / 2 - 50;
     
-    removeAllFireballs();
+    clearAllSlimeHazards();
     resetBossForLevel();
 
     window.removeEventListener('devicemotion', evaluateDeviceSensors);
@@ -338,11 +353,14 @@
 
   function resetBossForLevel() {
     runtime.eX = window.innerWidth * 0.75;
-    runtime.eY = window.innerHeight / 2 - 48;
+    runtime.eY = window.innerHeight / 2 - 60;
     runtime.eHP = 100;
     runtime.hasPowerUpBoost = false;
+    runtime.isStuckInSlime = false;
     UI.eFill.style.width = '100%';
     UI.player.style.filter = 'none';
+
+    updateSlimeBossScale();
 
     if (runtime.currentLevel >= 2) {
       spawnPowerUpRandomly();
@@ -353,9 +371,18 @@
     refreshViewportLayouts();
   }
 
-  function removeAllFireballs() {
-    runtime.fireballs.forEach(f => { if(f.element) f.element.remove(); });
-    runtime.fireballs = [];
+  function clearAllSlimeHazards() {
+    runtime.slimeGlobs.forEach(g => g.element.remove());
+    runtime.slimePuddles.forEach(p => p.element.remove());
+    runtime.slimeGlobs = [];
+    runtime.slimePuddles = [];
+  }
+
+  function updateSlimeBossScale() {
+    // Dynamic Size Mechanic: The Boss shrinks as its health pool dissolves!
+    let dynamicBaseSize = 120 * (0.5 + (runtime.eHP / 200)); 
+    UI.enemy.style.width = `${dynamicBaseSize}px`;
+    UI.enemy.style.height = `${dynamicBaseSize}px`;
   }
 
   function spawnPowerUpRandomly() {
@@ -372,7 +399,7 @@
     UI.power.style.top = `${runtime.powerY}px`;
     UI.power.style.display = 'block';
     
-    UI.status.textContent = "⚡ Power-Up telah muncul! Cari, ambil, dan elak fireball!";
+    UI.status.textContent = "⚡ Anti-Slime Crystal muncul! Ambil cepat untuk memecah perisai!";
     UI.status.style.color = "var(--powerup)";
   }
 
@@ -428,8 +455,14 @@
 
     if (totalMagnitude > SETTINGS.moveCutoff) {
       let workYield = (totalMagnitude - SETTINGS.moveCutoff) * SETTINGS.accelerationGain;
+      
+      // If stuck in a toxic puddle, apply heavy locomotion friction!
+      if (runtime.isStuckInSlime) {
+        workYield *= SETTINGS.stickySlowFactor;
+      }
+
       runtime.currentSpeed = Math.min(runtime.currentSpeed + workYield, SETTINGS.velocityCap);
-      UI.motionInfo.textContent = `Langkah: ${totalMagnitude.toFixed(1)} | Bergerak`;
+      UI.motionInfo.textContent = `Langkah: ${totalMagnitude.toFixed(1)} | ${runtime.isStuckInSlime ? 'TERSEKAT (Lari Laju!)' : 'Bergerak'}`;
     }
 
     if (totalMagnitude > SETTINGS.shakeCutoff) processCombatStrike();
@@ -456,12 +489,13 @@
     runtime.pX = Math.max(0, Math.min(window.innerWidth - 100, runtime.pX));
     runtime.pY = Math.max(0, Math.min(window.innerHeight - 100, runtime.pY));
 
-    // Fireball production cycle for levels 2 and 3
-    if ((runtime.currentLevel === 2 || runtime.currentLevel === 3) && timestamp - runtime.lastFireballFired > SETTINGS.fireballFrequency) {
-      runtime.lastFireballFired = timestamp;
-      shootFireball();
+    // Slime Boss Artillery Spawning Engine
+    if ((runtime.currentLevel === 2 || runtime.currentLevel === 3) && timestamp - runtime.lastSlimeFired > SETTINGS.slimeAttackFrequency) {
+      runtime.lastSlimeFired = timestamp;
+      spitSlimeGlob();
     }
-    processMovingFireballs();
+    
+    processSlimeHazards();
 
     if (runtime.powerSpawned && !runtime.hasPowerUpBoost) {
       let dx = (runtime.pX + 50) - (runtime.powerX + 20);
@@ -471,8 +505,8 @@
       if (pDist < 55) {
         runtime.hasPowerUpBoost = true;
         UI.power.style.display = 'none';
-        UI.player.style.filter = 'drop-shadow(0px 0px 8px #ffea00) brightness(1.2)';
-        UI.status.textContent = `⚡ POWERED UP! Serangan anda kini berkuasa tinggi!`;
+        UI.player.style.filter = 'drop-shadow(0px 0px 10px #ffea00) brightness(1.2)';
+        UI.status.textContent = `⚡ DILINDUNGI! Perisai Slime pecah, serang sekarang!`;
         UI.status.style.color = 'var(--powerup)';
       }
     }
@@ -481,71 +515,121 @@
     requestAnimationFrame(engineFrameTick);
   }
 
-  function shootFireball() {
-    let ball = document.createElement('div');
-    ball.className = 'fireball';
-    ball.style.left = `${runtime.eX + 40}px`;
-    ball.style.top = `${runtime.eY + 40}px`;
-    UI.container.appendChild(ball);
+  function spitSlimeGlob() {
+    let glob = document.createElement('div');
+    glob.className = 'slime-glob';
+    glob.style.left = `${runtime.eX + 40}px`;
+    glob.style.top = `${runtime.eY + 40}px`;
+    UI.container.appendChild(glob);
 
-    // Calculate dynamic angles to chase the hero player
     let targetX = runtime.pX + 50;
     let targetY = runtime.pY + 50;
-    let angle = Math.atan2(targetY - (runtime.eY + 20), targetX - (runtime.eX + 20));
+    let angle = Math.atan2(targetY - (runtime.eY + 40), targetX - (runtime.eX + 40));
 
-    // Level 3 increases project speed velocity
-    let combinedSpeed = runtime.currentLevel === 3 ? SETTINGS.fireballVelocity + 2 : SETTINGS.fireballVelocity;
+    // Level 3 triggers aggressive firing speed
+    let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.slimeGlobVelocity + 2.5 : SETTINGS.slimeGlobVelocity;
 
-    runtime.fireballs.push({
-      element: ball,
+    runtime.slimeGlobs.push({
+      element: glob,
       x: runtime.eX + 40,
       y: runtime.eY + 40,
-      vX: Math.cos(angle) * combinedSpeed,
-      vY: Math.sin(angle) * combinedSpeed
+      vX: Math.cos(angle) * velocityMultiplier,
+      vY: Math.sin(angle) * velocityMultiplier
     });
   }
 
-  function processMovingFireballs() {
-    for (let i = runtime.fireballs.length - 1; i >= 0; i--) {
-      let f = runtime.fireballs[i];
-      f.x += f.vX;
-      f.y += f.vY;
-      f.element.style.left = `${f.x}px`;
-      f.element.style.top = `${f.y}px`;
+  function processSlimeHazards() {
+    // 1. Process Airborne Projectiles
+    for (let i = runtime.slimeGlobs.length - 1; i >= 0; i--) {
+      let g = runtime.slimeGlobs[i];
+      g.x += g.vX;
+      g.y += g.vY;
+      g.element.style.left = `${g.x}px`;
+      g.element.style.top = `${g.y}px`;
 
-      // Cull outside items out of frame
-      if (f.x < -40 || f.x > window.innerWidth + 40 || f.y < -40 || f.y > window.innerHeight + 40) {
-        f.element.remove();
-        runtime.fireballs.splice(i, 1);
+      // If it leaves the screen boundaries, transform it into a ground puddle hazard!
+      if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
+        createSlimePuddle(g.x, g.y);
+        g.element.remove();
+        runtime.slimeGlobs.splice(i, 1);
         continue;
       }
 
-      // Proximity checks with Hero player hitbox
-      let dx = f.x - (runtime.pX + 50);
-      let dy = f.y - (runtime.pY + 50);
+      let dx = g.x - (runtime.pX + 50);
+      let dy = g.y - (runtime.pY + 50);
       let range = Math.sqrt(dx*dx + dy*dy);
 
-      if (range < 45) { // Hit registered
-        f.element.remove();
-        runtime.fireballs.splice(i, 1);
+      if (range < 45) { 
+        g.element.remove();
+        runtime.slimeGlobs.splice(i, 1);
         
-        runtime.pHP = Math.max(runtime.pHP - 15, 0);
+        runtime.pHP = Math.max(runtime.pHP - 12, 0);
         UI.pFill.style.width = `${runtime.pHP}%`;
         UI.player.classList.remove('hurt-flash'); void UI.player.offsetWidth; UI.player.classList.add('hurt-flash');
         
-        UI.status.textContent = `🔥 Anda terkena serangan Fireball Boss! HP berkurang!`;
+        UI.status.textContent = `🤢 Melekit! Terkena Slime Glob! HP Terjejas!`;
         UI.status.style.color = "var(--danger)";
 
         if (runtime.pHP <= 0) triggerGameOverScreen();
       }
     }
+
+    // 2. Process Ground Trap Puddles
+    let currentlyOnPuddle = false;
+    for (let j = runtime.slimePuddles.length - 1; j >= 0; j--) {
+      let p = runtime.slimePuddles[j];
+      
+      let dx = p.x - (runtime.pX + 50);
+      let dy = p.y - (runtime.pY + 50);
+      let trapDistance = Math.sqrt(dx*dx + dy*dy);
+
+      if (trapDistance < 50) {
+        currentlyOnPuddle = true;
+      }
+    }
+
+    // React to structural physics change
+    if (currentlyOnPuddle !== runtime.isStuckInSlime) {
+      runtime.isStuckInSlime = currentlyOnPuddle;
+      if (runtime.isStuckInSlime) {
+        UI.player.style.filter = runtime.hasPowerUpBoost 
+          ? 'drop-shadow(0px 0px 10px #ffea00) sepia(0.6) hue-rotate(60deg)'
+          : 'sepia(0.8) hue-rotate(60deg) brightness(0.8)';
+        UI.status.textContent = `⚠️ Anda tersekat dalam Puddle! Tingkatkan kelajuan senaman!`;
+        UI.status.style.color = "#ffaa00";
+      } else {
+        UI.player.style.filter = runtime.hasPowerUpBoost 
+          ? 'drop-shadow(0px 0px 10px #ffea00) brightness(1.2)' 
+          : 'none';
+      }
+    }
+  }
+
+  function createSlimePuddle(rawX, rawY) {
+    // Clamp coordinates onto physical display layout limits
+    let targetX = Math.max(40, Math.min(window.innerWidth - 80, rawX));
+    let targetY = Math.max(40, Math.min(window.innerHeight - 60, rawY));
+
+    let puddle = document.createElement('div');
+    puddle.className = 'slime-puddle';
+    puddle.style.left = `${targetX}px`;
+    puddle.style.top = `${targetY}px`;
+    UI.container.appendChild(puddle);
+
+    runtime.slimePuddles.push({ element: puddle, x: targetX, y: targetY });
+
+    // Cull ground hazards over a standard scale limit to keep map balanced
+    if (runtime.slimePuddles.length > 6) {
+      let oldPuddle = runtime.slimePuddles.shift();
+      oldPuddle.element.remove();
+    }
   }
 
   function triggerGameOverScreen() {
     runtime.halted = true;
-    removeAllFireballs();
+    clearAllSlimeHazards();
     UI.title.textContent = "💥 KEMPEN GAGAL!";
-    UI.desc.textContent = "Tenaga Hero anda telah habis dibakar fireball! Jom gerak semula untuk mencuba lagi.";
+    UI.desc.textContent = "Tenaga Hero anda telah diserap habis oleh Slime King! Jom lari semula untuk cuba lagi.";
     UI.btn.textContent = "CUBA LAGI LEVEL INI";
     UI.overlay.style.display = 'flex';
   }
@@ -556,9 +640,8 @@
     UI.enemy.style.left = `${runtime.eX}px`;
     UI.enemy.style.top = `${runtime.eY}px`;
 
-    // Precision Percentage shifting matrices for 3x4 layout structures
-    let xPercentage = runtime.currentFrameIndex * 50;  // 0% -> 50% -> 100%
-    let yPercentage = runtime.currentDirectionRow * 33.333; // Rows 1, 2, 3, 4
+    let xPercentage = runtime.currentFrameIndex * 50;  
+    let yPercentage = runtime.currentDirectionRow * 33.333; 
     
     UI.player.style.backgroundPosition = `${xPercentage}% ${yPercentage}%`;
   }
@@ -569,11 +652,12 @@
     if (timeStamp - runtime.lastAttack < SETTINGS.combatWindow) return;
     runtime.lastAttack = timeStamp;
 
-    let distanceVector = Math.sqrt(((runtime.eX + 48) - (runtime.pX + 50))**2 + ((runtime.eY + 48) - (runtime.pY + 50))**2);
+    let eWidth = parseInt(UI.enemy.style.width) || 120;
+    let distanceVector = Math.sqrt(((runtime.eX + (eWidth/2)) - (runtime.pX + 50))**2 + ((runtime.eY + (eWidth/2)) - (runtime.pY + 50))**2);
     
-    if (distanceVector <= SETTINGS.hitBoxRange + 50) {
+    if (distanceVector <= SETTINGS.hitBoxRange + (eWidth/2)) {
       if (runtime.currentLevel >= 2 && !runtime.hasPowerUpBoost) {
-        UI.status.textContent = "🛡️ Kebal! Boss tersenyum. Anda mesti mencari Power-Up dahulu!";
+        UI.status.textContent = "🛡️ Kebal! Mukus tebal melindunginya. Cari Kristal dahulu!";
         UI.status.style.color = "var(--danger)";
         return;
       }
@@ -585,18 +669,20 @@
       UI.eFill.style.width = `${runtime.eHP}%`;
       UI.enemy.classList.remove('hurt-flash'); void UI.enemy.offsetWidth; UI.enemy.classList.add('hurt-flash');
       
-      UI.status.textContent = `💥 Serangan Berjaya! HP Boss: ${runtime.eHP}%`;
+      updateSlimeBossScale();
+      
+      UI.status.textContent = `💥 PUKULAN! Saiz Slime Mengecil! HP Boss: ${runtime.eHP}%`;
       UI.status.style.color = "var(--primary)";
 
       if (runtime.eHP <= 0) progressCampaignLevel();
     } else {
-      UI.status.textContent = "❌ Terlalu jauh! Dekati boss sambil berlari!";
+      UI.status.textContent = "❌ Terlalu jauh! Dekati Slime King sambil berlari!";
     }
   }
 
   function progressCampaignLevel() {
     runtime.halted = true;
-    removeAllFireballs();
+    clearAllSlimeHazards();
     window.removeEventListener('devicemotion', evaluateDeviceSensors);
 
     if (runtime.currentLevel < 3) {
@@ -605,17 +691,17 @@
         UI.title.textContent = `LEVEL ${runtime.currentLevel} BERMULA!`;
         UI.safety.style.display = 'none'; 
         UI.desc.innerHTML = runtime.currentLevel === 2 
-          ? "<b>Amaran Level 2:</b> Boss kini mempunyai perisai kebal dan mula menembak <b>Fireball</b>! Sila kutip kristal kuning rawak di dalam peta!"
-          : "<b>Amaran Level 3 (Peringkat Akhir):</b> Tembakan Fireball Boss menjadi lebih laju! Ambil kristal kuning dengan pantas untuk menumbangkan Boss!";
+          ? "<b>Amaran Level 2:</b> Slime King membina perisai mukus dan meludah <b>Slime Globs</b>! Elak glob atau anda akan tersekat di dalam lopak lecah!"
+          : "<b>Amaran Peringkat Akhir:</b> Kadar rembesan Slime menjadi sangat agresif! Terus pantas melangkah bagi mengelak perangkap!";
         UI.btn.textContent = `PROSES KE LEVEL ${runtime.currentLevel}`;
         UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
         UI.overlay.style.display = 'flex';
       }, 1000);
     } else {
       setTimeout(() => {
-        UI.title.textContent = "🏆 TAHNIAH! KEMPEN SELESAI!";
+        UI.title.textContent = "🏆 TAHNIAH! RAJA SLIME TUMBANG!";
         UI.safety.style.display = 'none';
-        UI.desc.textContent = "Anda telah berjaya menyelesaikan kesemua 3 Level senaman dengan cemerlang!";
+        UI.desc.textContent = "Anda berjaya menewaskan Slime King dan menamatkan kesemua 3 fasa senaman kembara!";
         UI.btn.textContent = "MAIN SEMULA KEMPEN";
         runtime.currentLevel = 1;
         UI.badge.textContent = `LEVEL 1`;
@@ -627,7 +713,10 @@
   let testKeys = {};
   function simulateHardwareDown(e) {
     testKeys[e.code] = true;
-    if (e.code === 'ShiftLeft' || e.code === 'Space') runtime.currentSpeed = Math.min(runtime.currentSpeed + 2.0, SETTINGS.velocityCap);
+    if (e.code === 'ShiftLeft' || e.code === 'Space') {
+      let simulatedGain = runtime.isStuckInSlime ? 0.7 : 2.0; // Puddle dampening layout simulation
+      runtime.currentSpeed = Math.min(runtime.currentSpeed + simulatedGain, SETTINGS.velocityCap);
+    }
     if (e.code === 'KeyE') processCombatStrike();
     mapSimulatedSteering();
   }
