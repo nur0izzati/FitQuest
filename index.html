@@ -92,13 +92,18 @@
 
     #enemy {
       position: absolute;
-      width: 64px;
-      height: 64px;
-      will-change: left, top;
-      background: linear-gradient(135deg, var(--danger) 0%, #800000 100%);
-      border-radius: 14px;
-      box-shadow: 0 0 25px rgba(255, 51, 51, 0.6);
-      transition: transform 0.2s;
+      width: 96px;
+      height: 96px;
+    
+      background-image: url('assets/slime.png');
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
+    
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    
+      z-index: 5;
     }
 
     /* --- LEVEL 2 & 3 BOSS FIREBALL STYLE MAP --- */
@@ -333,7 +338,7 @@
 
   function resetBossForLevel() {
     runtime.eX = window.innerWidth * 0.75;
-    runtime.eY = window.innerHeight / 2 - 32;
+    runtime.eY = window.innerHeight / 2 - 48;
     runtime.eHP = 100;
     runtime.hasPowerUpBoost = false;
     UI.eFill.style.width = '100%';
@@ -479,8 +484,8 @@
   function shootFireball() {
     let ball = document.createElement('div');
     ball.className = 'fireball';
-    ball.style.left = `${runtime.eX + 20}px`;
-    ball.style.top = `${runtime.eY + 20}px`;
+    ball.style.left = `${runtime.eX + 40}px`;
+    ball.style.top = `${runtime.eY + 40}px`;
     UI.container.appendChild(ball);
 
     // Calculate dynamic angles to chase the hero player
@@ -493,8 +498,8 @@
 
     runtime.fireballs.push({
       element: ball,
-      x: runtime.eX + 20,
-      y: runtime.eY + 20,
+      x: runtime.eX + 40,
+      y: runtime.eY + 40,
       vX: Math.cos(angle) * combinedSpeed,
       vY: Math.sin(angle) * combinedSpeed
     });
@@ -564,7 +569,7 @@
     if (timeStamp - runtime.lastAttack < SETTINGS.combatWindow) return;
     runtime.lastAttack = timeStamp;
 
-    let distanceVector = Math.sqrt(((runtime.eX + 32) - (runtime.pX + 50))**2 + ((runtime.eY + 32) - (runtime.pY + 50))**2);
+    let distanceVector = Math.sqrt(((runtime.eX + 48) - (runtime.pX + 50))**2 + ((runtime.eY + 48) - (runtime.pY + 50))**2);
     
     if (distanceVector <= SETTINGS.hitBoxRange + 50) {
       if (runtime.currentLevel >= 2 && !runtime.hasPowerUpBoost) {
