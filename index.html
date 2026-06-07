@@ -53,7 +53,7 @@
       z-index: 100;
       padding: 15px;
       text-align: center;
-      overflow-y: auto; /* Fallback for exceptionally short phones */
+      overflow-y: auto;
     }
 
     .setup-box {
@@ -73,7 +73,6 @@
       text-transform: uppercase;
     }
 
-    /* Character Selector Styles */
     .char-toggle-container {
       display: flex;
       gap: 10px;
@@ -140,7 +139,7 @@
       width: 100px;           
       height: 100px;          
       will-change: left, top;
-      background-image: url('assets/hero-sprite.png'); /* Defaults to female, changed via JS */
+      background-image: url('assets/hero-sprite.png');
       background-repeat: no-repeat;
       background-size: 300% 400%;   
       background-position: 50% 0%;  
@@ -227,7 +226,7 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 15px;
+      padding: 12px;
       z-index: 10;
     }
 
@@ -250,51 +249,48 @@
       align-self: center;
     }
 
-    /* FIXED: Consolidated Control Container to completely stop small screen overlapping */
-    .bottom-controls-wrapper {
-      width: 100%;
-      max-width: 400px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      pointer-events: auto; /* Keeps elements inside interactable */
-    }
-
+    /* REVERTED: Joystick is back to absolute positioning on the left side */
     #joy-boundary {
-      position: relative; /* Changed from absolute to flow cleanly in layout stack */
-      width: 100px;
-      height: 100px;
+      position: absolute; 
+      bottom: 25px;
+      left: 25px;
+      width: 90px;
+      height: 90px;
       background: rgba(255, 255, 255, 0.03);
       border: 2px solid rgba(255, 255, 255, 0.12);
       border-radius: 50%;
       display: flex;
       justify-content: center;
       align-items: center;
+      pointer-events: auto;
     }
 
     #joy-stick {
-      width: 38px;
-      height: 38px;
+      width: 34px;
+      height: 34px;
       background: rgba(255, 255, 255, 0.2);
       border: 2px solid rgba(255, 255, 255, 0.8);
       border-radius: 50%;
       pointer-events: none;
     }
 
+    /* FIXED: Adjusted width and layout to ensure it fits perfectly beside the joystick */
     .control-deck {
-      width: 100%;
+      align-self: flex-end;
+      width: calc(100% - 120px);
+      margin-left: auto;
       background: var(--panel);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 10px;
+      border-radius: 14px;
+      padding: 8px;
       text-align: center;
       backdrop-filter: blur(12px);
+      pointer-events: auto;
+      margin-bottom: 5px;
     }
 
-    #status-msg { font-size: 0.95rem; font-weight: bold; color: #00e5ff; margin-bottom: 2px; min-height: 22px; }
-    .exercise-metrics { font-size: 0.75rem; color: #6c7285; text-transform: uppercase; }
+    #status-msg { font-size: 0.85rem; font-weight: bold; color: #00e5ff; margin-bottom: 2px; min-height: 20px; }
+    .exercise-metrics { font-size: 0.7rem; color: #6c7285; text-transform: uppercase; }
   </style>
 </head>
 <body>
@@ -304,7 +300,6 @@
   <div id="overlay">
     <h1 id="menu-title" style="margin-bottom: 15px;">FITQUEST</h1>
     
-    <!-- CHANGED: Character Selection Box -->
     <div class="setup-box">
       <h3>Select Character</h3>
       <div class="char-toggle-container">
@@ -316,9 +311,9 @@
     <div class="setup-box how-to-play-box">
       <h3>🏃‍♂️ How To Play</h3>
       <ul>
-        <li><b>Step 1 (Aim):</b> Hold and drag the virtual joystick to face a direction. <i>(Note: Joystick alone won't move you!)</i></li>
-        <li><b>Step 2 (Move):</b> Keep holding the joystick while physically **walking or jogging on the spot** to move forward.</li>
-        <li><b>Step 3 (Attack):</b> Walk near the Sugar King and firmly **shake your phone** to swing your attack!</li>
+        <li><b>Step 1 (Aim):</b> Hold and drag the virtual joystick to face a direction.</li>
+        <li><b>Step 2 (Move):</b> Keep holding the joystick while physically **walking or jogging on the spot**.</li>
+        <li><b>Step 3 (Attack):</b> Walk near the Boss and firmly **shake your phone** to strike!</li>
       </ul>
     </div>
 
@@ -329,7 +324,6 @@
       </p>
     </div>
 
-    <!-- CHANGED: Title Action to Start Game -->
     <button class="cta-btn" id="action-btn" onclick="igniteEngine()">START GAME</button>
   </div>
 
@@ -345,21 +339,21 @@
       </div>
       <div id="level-badge">LEVEL 1</div>
       <div class="hp-housing" style="text-align: right;">
-        <div class="hp-label">Sugar King Health</div>
+        <!-- CHANGED: Relabeled from Sugar King Health to Boss Health -->
+        <div class="hp-label">Boss Health</div>
         <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
       </div>
     </div>
 
-    <!-- FIXED: Joystick and Deck grouped securely in vertical container to prevent over-stacking -->
-    <div class="bottom-controls-wrapper">
-      <div id="joy-boundary">
-        <div id="joy-stick"></div>
-      </div>
+    <!-- Joystick sits independently on the left side again -->
+    <div id="joy-boundary">
+      <div id="joy-stick"></div>
+    </div>
 
-      <div class="control-deck">
-        <div id="status-msg">Ready for action...</div>
-        <div class="exercise-metrics" id="motion-display">Step Rate: 0.00 | Status: Idle</div>
-      </div>
+    <!-- Status panel sits neatly on the right side next to the joystick -->
+    <div class="control-deck">
+      <div id="status-msg">Ready for action...</div>
+      <div class="exercise-metrics" id="motion-display">Step Rate: 0.00 | Status: Idle</div>
     </div>
   </div>
 </div>
@@ -373,7 +367,7 @@
     frictionFactor: 0.88,
     accelerationGain: 0.7,
     velocityCap: 6.5,
-    padRadius: 50, /* Slightly reduced to sit clean on small displays */
+    padRadius: 45,
     animationSpeed: 110,
     sugarGlobVelocity: 4,
     sugarAttackFrequency: 2200,
@@ -395,7 +389,7 @@
     sugarGlobs: [],
     sugarPuddles: [],
     lastSugarFired: 0,
-    selectedSprite: 'assets/hero-sprite.png' // Default female tracker
+    selectedSprite: 'assets/hero-sprite.png'
   };
 
   const UI = {
@@ -416,7 +410,6 @@
     padStick: document.getElementById('joy-stick')
   };
 
-  // CHANGED: Process gender button selection state switching
   function selectGender(gender) {
     const femaleBtn = document.getElementById('btn-female');
     const maleBtn = document.getElementById('btn-male');
@@ -433,7 +426,6 @@
   }
 
   function igniteEngine() {
-    // Apply selected sprite asset immediately upon injection
     UI.player.style.backgroundImage = `url('${runtime.selectedSprite}')`;
 
     if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -513,7 +505,7 @@
     UI.power.style.top = `${runtime.powerY}px`;
     UI.power.style.display = 'block';
     
-    UI.status.textContent = "🍏 Apple Spawned! Grab it quick to break the sugar shield!";
+    UI.status.textContent = "🍏 Apple Spawned! Grab it quick to break the shield!";
     UI.status.style.color = "var(--powerup)";
   }
 
@@ -672,7 +664,7 @@
         UI.pFill.style.width = `${runtime.pHP}%`;
         UI.player.classList.remove('hurt-flash'); void UI.player.offsetWidth; UI.player.classList.add('hurt-flash');
         
-        UI.status.textContent = `💥 Sugar Crash! Hit by flying sugar crystal!`;
+        UI.status.textContent = `💥 Hit by flying obstacle!`;
         UI.status.style.color = "var(--danger)";
 
         if (runtime.pHP <= 0) triggerGameOverScreen();
@@ -768,7 +760,7 @@
     
     if (distanceVector <= SETTINGS.hitBoxRange + (eWidth/2)) {
       if (runtime.currentLevel >= 2 && !runtime.hasPowerUpBoost) {
-        UI.status.textContent = "🛡️ Immune! Glucose armor protects him. Collect an Apple first!";
+        UI.status.textContent = "🛡️ Immune! Armor protects him. Collect an Apple first!";
         UI.status.style.color = "var(--danger)";
         return;
       }
@@ -780,7 +772,7 @@
       UI.enemy.classList.remove('hurt-flash'); void UI.enemy.offsetWidth; UI.enemy.classList.add('hurt-flash');
       
       updateSugarBossScale();
-      UI.status.textContent = `💥 HIT! Target Health: ${runtime.eHP}%`;
+      UI.status.textContent = `💥 HIT! Boss Health: ${runtime.eHP}%`;
       UI.status.style.color = "var(--primary)";
 
       if (runtime.eHP <= 0) progressCampaignLevel();
@@ -833,7 +825,6 @@
     }
   }
 
-  // Internal Fallback Key Listener Simulation Triggers
   let testKeys = {};
   function simulateHardwareDown(e) {
     testKeys[e.code] = true;
