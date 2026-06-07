@@ -311,7 +311,7 @@
   <div id="overlay">
     <h1 id="menu-title">FITQUEST</h1>
     
-    <!-- Character Toggle Box Preserved -->
+    <!-- Character Toggle Box -->
     <div class="setup-box">
       <h3>Select Character</h3>
       <div class="char-toggle-container">
@@ -336,7 +336,8 @@
       </p>
     </div>
 
-    <button class="cta-btn" id="action-btn" onclick="igniteEngine()">START CAMPAIGN</button>
+    <!-- UI Update: Campaign -> Game -->
+    <button class="cta-btn" id="action-btn" onclick="igniteEngine()">START GAME</button>
   </div>
 
   <div id="player"></div>
@@ -355,7 +356,6 @@
       </div>
       <div id="level-badge">LEVEL 1</div>
       <div class="hp-housing" style="text-align: right;">
-        <!-- Clean UI Update: Sugar King Health -> Boss Health -->
         <div class="hp-label">Boss Health</div>
         <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
       </div>
@@ -730,7 +730,8 @@
   function triggerGameOverScreen() {
     runtime.halted = true;
     clearAllSugarHazards();
-    UI.title.textContent = "💥 CAMPAIGN FAILED!";
+    /* UI Update: Campaign -> Game */
+    UI.title.textContent = "💥 GAME FAILED!";
     UI.status.textContent = "Defeated...";
     UI.overlay.querySelector('.how-to-play-box').style.display = 'none'; 
     UI.overlay.querySelector('.setup-box').style.display = 'none'; 
@@ -823,11 +824,12 @@
       }, 1000);
     } else {
       setTimeout(() => {
+        /* UI Update: Campaign -> Game */
         UI.title.textContent = "🏆 VICTORY COMPLETE!";
         levelDesc.textContent = "Brilliant work! You completed your active workout and finished your journey!";
         
         UI.overlay.insertBefore(levelDesc, UI.btn);
-        UI.btn.textContent = "REPLAY CAMPAIGN";
+        UI.btn.textContent = "REPLAY GAME";
         runtime.currentLevel = 1;
         UI.badge.textContent = `LEVEL 1`;
         UI.overlay.style.display = 'flex';
