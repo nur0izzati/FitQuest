@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FitQuest: Slime King Campaign</title>
+  <title>FitQuest: Sugar King Campaign</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
   <style>
@@ -10,7 +10,7 @@
       --primary: #00ff66;
       --danger: #ff3333;
       --powerup: #ffea00;
-      --slime-green: #39ff14;
+      --sugar-white: #ffffff;
       --bg: #0d0e12;
       --panel: rgba(22, 24, 33, 0.9);
     }
@@ -35,7 +35,7 @@
       position: relative;
       width: 100vw;
       height: 100vh;
-      background: radial-gradient(circle at center, #1b2618 0%, #080d09 100%);
+      background: radial-gradient(circle at center, #261818 0%, #0d0808 100%);
       overflow: hidden;
     }
 
@@ -45,7 +45,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(11, 15, 12, 0.98);
+      background: rgba(15, 11, 11, 0.98);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -65,15 +65,15 @@
     }
 
     .cta-btn {
-      background: linear-gradient(135deg, var(--slime-green) 0%, #00b347 100%);
+      background: linear-gradient(135deg, #ff3366 0%, #b3002d 100%);
       border: none;
-      color: #000;
+      color: #fff;
       padding: 16px 45px;
       font-size: 1.2rem;
       font-weight: bold;
       border-radius: 30px;
       cursor: pointer;
-      box-shadow: 0 6px 20px rgba(57, 255, 20, 0.4);
+      box-shadow: 0 6px 20px rgba(255, 51, 102, 0.4);
     }
 
     #player {
@@ -81,7 +81,7 @@
       width: 100px;           
       height: 100px;          
       will-change: left, top;
-      background-image: url('assets/hero-sprite.png'); 
+      background-image: url('assets/hero-sprite2.png'); 
       background-repeat: no-repeat;
       background-size: 300% 400%;   
       background-position: 50% 0%;  
@@ -95,38 +95,36 @@
         position: absolute;
         width: 120px;
         height: 120px;
-        background-image: url('assets/slime.png');
+        background-image: url('assets/sugar-cube.png'); /* ENEMY: Changed back to Sugar Cube */
         background-repeat: no-repeat;
         background-size: contain;
-        background-position: bottom center; /* CRITICAL: Keeps the slime's bottom flat on the ground when it squishes */
+        background-position: bottom center;
         image-rendering: pixelated;
         image-rendering: crisp-edges;
         z-index: 5;
-        transform-origin: bottom center;     /* Anchors the animation scaling to the floor */
+        transform-origin: bottom center;
         transition: width 0.3s, height 0.3s;
-      
-        /* --- THE IDLE ANIMATION TRIGGER --- */
-        animation: slimeIdleAnimation 1.4s infinite alternate ease-in-out;
+        animation: enemyIdleAnimation 1.4s infinite alternate ease-in-out;
       }
 
-    /* --- SLIME PROJECTILE AND PUDDLE STYLES --- */
-    .slime-glob {
+    /* --- SUGAR PROJECTILE AND SYRUP PUDDLE STYLES --- */
+    .sugar-glob {
       position: absolute;
-      width: 28px;
-      height: 28px;
-      background: radial-gradient(circle, #ccff00 20%, #22aa00 80%, transparent 100%);
-      border-radius: 50%;
-      box-shadow: 0 0 15px var(--slime-green);
+      width: 24px;
+      height: 24px;
+      background: radial-gradient(circle, #ffffff 20%, #ffccd5 80%, transparent 100%);
+      border-radius: 4px; /* Blocky sugar crystal shape */
+      box-shadow: 0 0 15px var(--sugar-white);
       z-index: 7;
     }
 
-    .slime-puddle {
+    .sugar-puddle {
       position: absolute;
       width: 60px;
       height: 25px;
-      background: rgba(57, 255, 20, 0.5);
+      background: rgba(255, 182, 193, 0.5); /* Sticky pink syrup puddle */
       border-radius: 50%;
-      box-shadow: 0 0 12px #22aa00;
+      box-shadow: 0 0 12px #ff6680;
       z-index: 4;
       animation: meltIn 0.3s ease-out;
     }
@@ -135,9 +133,13 @@
       position: absolute;
       width: 40px;
       height: 40px;
-      background: radial-gradient(circle, var(--powerup) 0%, #ff8800 100%);
-      border-radius: 50%;
-      box-shadow: 0 0 20px var(--powerup);
+      background-image: url('assets/apple.png'); /* POWER-UP: Apple */
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      filter: drop-shadow(0 0 8px var(--powerup));
       display: none;
       z-index: 4;
     }
@@ -151,24 +153,10 @@
     @keyframes bounceItem { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
     @keyframes meltIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-    /* --- SQUISHY SLIME IDLE LOGIC --- */
-    @keyframes slimeIdleAnimation {
-      0% {
-        /* Normal resting shape, slightly floating or resting */
-        transform: scaleX(1) scaleY(1) translateY(0);
-      }
-      45% {
-        /* Stretches upward slightly as it gears up to bounce */
-        transform: scaleX(0.93) scaleY(1.07) translateY(-4px);
-      }
-      90% {
-        /* Drops down and squashes out flat against the floor */
-        transform: scaleX(1.18) scaleY(0.82) translateY(0);
-      }
-      100% {
-        /* Tiny pause at the flattest peak before bouncing back up */
-        transform: scaleX(1.2) scaleY(0.8) translateY(0);
-      }
+    @keyframes enemyIdleAnimation {
+      0% { transform: scaleX(1) scaleY(1) translateY(0); }
+      50% { transform: scaleX(1.05) scaleY(0.95) translateY(2px); }
+      100% { transform: scaleX(0.95) scaleY(1.05) translateY(-2px); }
     }
 
     #ui-layer {
@@ -191,7 +179,7 @@
     .hp-track { width: 100%; height: 12px; background: #1f222e; border-radius: 6px; overflow: hidden; }
     .hp-fill { height: 100%; width: 100%; transition: width 0.15s ease-out; }
     #p-fill { background: linear-gradient(90deg, #00ff66, #00bcff); }
-    #e-fill { background: linear-gradient(90deg, var(--slime-green), #aa00ff); }
+    #e-fill { background: linear-gradient(90deg, #ff3366, #ff99bb); }
 
     #level-badge {
       background: #1f222e;
@@ -245,7 +233,7 @@
 
 <div id="game-container">
   <div id="overlay">
-    <h1 id="menu-title">FITQUEST: SLIME KING</h1>
+    <h1 id="menu-title">FITQUEST: SUGAR KING</h1>
     
     <div class="safety-warning-box" id="safety-box">
       <b style="color: var(--danger); text-transform: uppercase; font-size: 0.9rem;">⚠️ KESELAMATAN / SAFETY WARNING:</b>
@@ -276,7 +264,7 @@
       </div>
       <div id="level-badge">LEVEL 1</div>
       <div class="hp-housing" style="text-align: right;">
-        <div class="hp-label">Slime King Health</div>
+        <div class="hp-label">Sugar King Health</div>
         <div class="hp-track"><div id="e-fill" class="hp-fill"></div></div>
       </div>
     </div>
@@ -299,9 +287,9 @@
     velocityCap: 6.5,
     padRadius: 60,
     animationSpeed: 110,
-    slimeGlobVelocity: 4,
-    slimeAttackFrequency: 2200,
-    stickySlowFactor: 0.35 // Player loses 65% speed in mud, requires higher stepping/effort
+    sugarGlobVelocity: 4,
+    sugarAttackFrequency: 2200,
+    stickySlowFactor: 0.35
   };
 
   let runtime = {
@@ -315,12 +303,10 @@
     hasPowerUpBoost: false,
     powerX: 0, powerY: 0,
     powerSpawned: false,
-    isStuckInSlime: false,
-    
-    // Slime-specific runtime pools
-    slimeGlobs: [],
-    slimePuddles: [],
-    lastSlimeFired: 0
+    isStuckInSyrup: false,
+    sugarGlobs: [],
+    sugarPuddles: [],
+    lastSugarFired: 0
   };
 
   const UI = {
@@ -353,13 +339,12 @@
   function setupEnvironment() {
     UI.overlay.style.display = 'none';
     runtime.halted = false;
-    
     runtime.pHP = 100;
     UI.pFill.style.width = '100%';
     runtime.pX = window.innerWidth * 0.15;
     runtime.pY = window.innerHeight / 2 - 50;
     
-    clearAllSlimeHazards();
+    clearAllSugarHazards();
     resetBossForLevel();
 
     window.removeEventListener('devicemotion', evaluateDeviceSensors);
@@ -379,11 +364,11 @@
     runtime.eY = window.innerHeight / 2 - 60;
     runtime.eHP = 100;
     runtime.hasPowerUpBoost = false;
-    runtime.isStuckInSlime = false;
+    runtime.isStuckInSyrup = false;
     UI.eFill.style.width = '100%';
     UI.player.style.filter = 'none';
 
-    updateSlimeBossScale();
+    updateSugarBossScale();
 
     if (runtime.currentLevel >= 2) {
       spawnPowerUpRandomly();
@@ -394,15 +379,14 @@
     refreshViewportLayouts();
   }
 
-  function clearAllSlimeHazards() {
-    runtime.slimeGlobs.forEach(g => g.element.remove());
-    runtime.slimePuddles.forEach(p => p.element.remove());
-    runtime.slimeGlobs = [];
-    runtime.slimePuddles = [];
+  function clearAllSugarHazards() {
+    runtime.sugarGlobs.forEach(g => g.element.remove());
+    runtime.sugarPuddles.forEach(p => p.element.remove());
+    runtime.sugarGlobs = [];
+    runtime.sugarPuddles = [];
   }
 
-  function updateSlimeBossScale() {
-    // Dynamic Size Mechanic: The Boss shrinks as its health pool dissolves!
+  function updateSugarBossScale() {
     let dynamicBaseSize = 120 * (0.5 + (runtime.eHP / 200)); 
     UI.enemy.style.width = `${dynamicBaseSize}px`;
     UI.enemy.style.height = `${dynamicBaseSize}px`;
@@ -422,7 +406,7 @@
     UI.power.style.top = `${runtime.powerY}px`;
     UI.power.style.display = 'block';
     
-    UI.status.textContent = "⚡ Anti-Slime Crystal muncul! Ambil cepat untuk memecah perisai!";
+    UI.status.textContent = "🍏 Apple Boost muncul! Ambil cepat untuk memecah perisai gula!";
     UI.status.style.color = "var(--powerup)";
   }
 
@@ -478,14 +462,11 @@
 
     if (totalMagnitude > SETTINGS.moveCutoff) {
       let workYield = (totalMagnitude - SETTINGS.moveCutoff) * SETTINGS.accelerationGain;
-      
-      // If stuck in a toxic puddle, apply heavy locomotion friction!
-      if (runtime.isStuckInSlime) {
+      if (runtime.isStuckInSyrup) {
         workYield *= SETTINGS.stickySlowFactor;
       }
-
       runtime.currentSpeed = Math.min(runtime.currentSpeed + workYield, SETTINGS.velocityCap);
-      UI.motionInfo.textContent = `Langkah: ${totalMagnitude.toFixed(1)} | ${runtime.isStuckInSlime ? 'TERSEKAT (Lari Laju!)' : 'Bergerak'}`;
+      UI.motionInfo.textContent = `Langkah: ${totalMagnitude.toFixed(1)} | ${runtime.isStuckInSyrup ? 'LEKAS! TERSEKAT AIR GULA' : 'Bergerak'}`;
     }
 
     if (totalMagnitude > SETTINGS.shakeCutoff) processCombatStrike();
@@ -512,13 +493,12 @@
     runtime.pX = Math.max(0, Math.min(window.innerWidth - 100, runtime.pX));
     runtime.pY = Math.max(0, Math.min(window.innerHeight - 100, runtime.pY));
 
-    // Slime Boss Artillery Spawning Engine
-    if ((runtime.currentLevel === 2 || runtime.currentLevel === 3) && timestamp - runtime.lastSlimeFired > SETTINGS.slimeAttackFrequency) {
-      runtime.lastSlimeFired = timestamp;
-      spitSlimeGlob();
+    if ((runtime.currentLevel === 2 || runtime.currentLevel === 3) && timestamp - runtime.lastSugarFired > SETTINGS.sugarAttackFrequency) {
+      runtime.lastSugarFired = timestamp;
+      spitSugarGlob();
     }
     
-    processSlimeHazards();
+    processSugarHazards();
 
     if (runtime.powerSpawned && !runtime.hasPowerUpBoost) {
       let dx = (runtime.pX + 50) - (runtime.powerX + 20);
@@ -529,7 +509,7 @@
         runtime.hasPowerUpBoost = true;
         UI.power.style.display = 'none';
         UI.player.style.filter = 'drop-shadow(0px 0px 10px #ffea00) brightness(1.2)';
-        UI.status.textContent = `⚡ DILINDUNGI! Perisai Slime pecah, serang sekarang!`;
+        UI.status.textContent = `🍏 VITAMIN APPLE! Perisai gula pecah, serang sekarang!`;
         UI.status.style.color = 'var(--powerup)';
       }
     }
@@ -538,9 +518,9 @@
     requestAnimationFrame(engineFrameTick);
   }
 
-  function spitSlimeGlob() {
+  function spitSugarGlob() {
     let glob = document.createElement('div');
-    glob.className = 'slime-glob';
+    glob.className = 'sugar-glob';
     glob.style.left = `${runtime.eX + 40}px`;
     glob.style.top = `${runtime.eY + 40}px`;
     UI.container.appendChild(glob);
@@ -548,11 +528,9 @@
     let targetX = runtime.pX + 50;
     let targetY = runtime.pY + 50;
     let angle = Math.atan2(targetY - (runtime.eY + 40), targetX - (runtime.eX + 40));
+    let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.sugarGlobVelocity + 2.5 : SETTINGS.sugarGlobVelocity;
 
-    // Level 3 triggers aggressive firing speed
-    let velocityMultiplier = runtime.currentLevel === 3 ? SETTINGS.slimeGlobVelocity + 2.5 : SETTINGS.slimeGlobVelocity;
-
-    runtime.slimeGlobs.push({
+    runtime.sugarGlobs.push({
       element: glob,
       x: runtime.eX + 40,
       y: runtime.eY + 40,
@@ -561,20 +539,18 @@
     });
   }
 
-  function processSlimeHazards() {
-    // 1. Process Airborne Projectiles
-    for (let i = runtime.slimeGlobs.length - 1; i >= 0; i--) {
-      let g = runtime.slimeGlobs[i];
+  function processSugarHazards() {
+    for (let i = runtime.sugarGlobs.length - 1; i >= 0; i--) {
+      let g = runtime.sugarGlobs[i];
       g.x += g.vX;
       g.y += g.vY;
       g.element.style.left = `${g.x}px`;
       g.element.style.top = `${g.y}px`;
 
-      // If it leaves the screen boundaries, transform it into a ground puddle hazard!
       if (g.x < -20 || g.x > window.innerWidth + 20 || g.y < -20 || g.y > window.innerHeight + 20) {
-        createSlimePuddle(g.x, g.y);
+        createSugarPuddle(g.x, g.y);
         g.element.remove();
-        runtime.slimeGlobs.splice(i, 1);
+        runtime.sugarGlobs.splice(i, 1);
         continue;
       }
 
@@ -584,24 +560,21 @@
 
       if (range < 45) { 
         g.element.remove();
-        runtime.slimeGlobs.splice(i, 1);
-        
+        runtime.sugarGlobs.splice(i, 1);
         runtime.pHP = Math.max(runtime.pHP - 12, 0);
         UI.pFill.style.width = `${runtime.pHP}%`;
         UI.player.classList.remove('hurt-flash'); void UI.player.offsetWidth; UI.player.classList.add('hurt-flash');
         
-        UI.status.textContent = `🤢 Melekit! Terkena Slime Glob! HP Terjejas!`;
+        UI.status.textContent = `💥 Sugar Crash! Terkena tembakan kristal gula!`;
         UI.status.style.color = "var(--danger)";
 
         if (runtime.pHP <= 0) triggerGameOverScreen();
       }
     }
 
-    // 2. Process Ground Trap Puddles
     let currentlyOnPuddle = false;
-    for (let j = runtime.slimePuddles.length - 1; j >= 0; j--) {
-      let p = runtime.slimePuddles[j];
-      
+    for (let j = runtime.sugarPuddles.length - 1; j >= 0; j--) {
+      let p = runtime.sugarPuddles[j];
       let dx = p.x - (runtime.pX + 50);
       let dy = p.y - (runtime.pY + 50);
       let trapDistance = Math.sqrt(dx*dx + dy*dy);
@@ -611,14 +584,13 @@
       }
     }
 
-    // React to structural physics change
-    if (currentlyOnPuddle !== runtime.isStuckInSlime) {
-      runtime.isStuckInSlime = currentlyOnPuddle;
-      if (runtime.isStuckInSlime) {
+    if (currentlyOnPuddle !== runtime.isStuckInSyrup) {
+      runtime.isStuckInSyrup = currentlyOnPuddle;
+      if (runtime.isStuckInSyrup) {
         UI.player.style.filter = runtime.hasPowerUpBoost 
-          ? 'drop-shadow(0px 0px 10px #ffea00) sepia(0.6) hue-rotate(60deg)'
-          : 'sepia(0.8) hue-rotate(60deg) brightness(0.8)';
-        UI.status.textContent = `⚠️ Anda tersekat dalam Puddle! Tingkatkan kelajuan senaman!`;
+          ? 'drop-shadow(0px 0px 10px #ffea00) sepia(0.5) hue-rotate(330deg)'
+          : 'sepia(0.6) hue-rotate(330deg) brightness(0.9)';
+        UI.status.textContent = `⚠️ Tersekat dalam air gula pekat! Lari lebih pantas!`;
         UI.status.style.color = "#ffaa00";
       } else {
         UI.player.style.filter = runtime.hasPowerUpBoost 
@@ -628,31 +600,29 @@
     }
   }
 
-  function createSlimePuddle(rawX, rawY) {
-    // Clamp coordinates onto physical display layout limits
+  function createSugarPuddle(rawX, rawY) {
     let targetX = Math.max(40, Math.min(window.innerWidth - 80, rawX));
     let targetY = Math.max(40, Math.min(window.innerHeight - 60, rawY));
 
     let puddle = document.createElement('div');
-    puddle.className = 'slime-puddle';
+    puddle.className = 'sugar-puddle';
     puddle.style.left = `${targetX}px`;
     puddle.style.top = `${targetY}px`;
     UI.container.appendChild(puddle);
 
-    runtime.slimePuddles.push({ element: puddle, x: targetX, y: targetY });
+    runtime.sugarPuddles.push({ element: puddle, x: targetX, y: targetY });
 
-    // Cull ground hazards over a standard scale limit to keep map balanced
-    if (runtime.slimePuddles.length > 6) {
-      let oldPuddle = runtime.slimePuddles.shift();
+    if (runtime.sugarPuddles.length > 6) {
+      let oldPuddle = runtime.sugarPuddles.shift();
       oldPuddle.element.remove();
     }
   }
 
   function triggerGameOverScreen() {
     runtime.halted = true;
-    clearAllSlimeHazards();
+    clearAllSugarHazards();
     UI.title.textContent = "💥 KEMPEN GAGAL!";
-    UI.desc.textContent = "Tenaga Hero anda telah diserap habis oleh Slime King! Jom lari semula untuk cuba lagi.";
+    UI.desc.textContent = "Tenaga Hero anda telah diserap habis oleh Sugar King! Jom jog semula untuk cuba lagi.";
     UI.btn.textContent = "CUBA LAGI LEVEL INI";
     UI.overlay.style.display = 'flex';
   }
@@ -665,7 +635,6 @@
 
     let xPercentage = runtime.currentFrameIndex * 50;  
     let yPercentage = runtime.currentDirectionRow * 33.333; 
-    
     UI.player.style.backgroundPosition = `${xPercentage}% ${yPercentage}%`;
   }
   
@@ -680,32 +649,30 @@
     
     if (distanceVector <= SETTINGS.hitBoxRange + (eWidth/2)) {
       if (runtime.currentLevel >= 2 && !runtime.hasPowerUpBoost) {
-        UI.status.textContent = "🛡️ Kebal! Mukus tebal melindunginya. Cari Kristal dahulu!";
+        UI.status.textContent = "🛡️ Kebal! Perisai gula melindunginya. Cari Apple dahulu!";
         UI.status.style.color = "var(--danger)";
         return;
       }
 
       let dmg = runtime.hasPowerUpBoost ? 34 : 20; 
-      
       UI.player.classList.remove('attack-pulse'); void UI.player.offsetWidth; UI.player.classList.add('attack-pulse');
       runtime.eHP = Math.max(runtime.eHP - dmg, 0); 
       UI.eFill.style.width = `${runtime.eHP}%`;
       UI.enemy.classList.remove('hurt-flash'); void UI.enemy.offsetWidth; UI.enemy.classList.add('hurt-flash');
       
-      updateSlimeBossScale();
-      
-      UI.status.textContent = `💥 PUKULAN! Saiz Slime Mengecil! HP Boss: ${runtime.eHP}%`;
+      updateSugarBossScale();
+      UI.status.textContent = `💥 PUKULAN! Saiz Sugar Cube Mengecil! HP Boss: ${runtime.eHP}%`;
       UI.status.style.color = "var(--primary)";
 
       if (runtime.eHP <= 0) progressCampaignLevel();
     } else {
-      UI.status.textContent = "❌ Terlalu jauh! Dekati Slime King sambil berlari!";
+      UI.status.textContent = "❌ Terlalu jauh! Dekati Sugar King sambil berlari!";
     }
   }
 
   function progressCampaignLevel() {
     runtime.halted = true;
-    clearAllSlimeHazards();
+    clearAllSugarHazards();
     window.removeEventListener('devicemotion', evaluateDeviceSensors);
 
     if (runtime.currentLevel < 3) {
@@ -714,17 +681,17 @@
         UI.title.textContent = `LEVEL ${runtime.currentLevel} BERMULA!`;
         UI.safety.style.display = 'none'; 
         UI.desc.innerHTML = runtime.currentLevel === 2 
-          ? "<b>Amaran Level 2:</b> Slime King membina perisai mukus dan meludah <b>Slime Globs</b>! Elak glob atau anda akan tersekat di dalam lopak lecah!"
-          : "<b>Amaran Peringkat Akhir:</b> Kadar rembesan Slime menjadi sangat agresif! Terus pantas melangkah bagi mengelak perangkap!";
+          ? "<b>Amaran Level 2:</b> Sugar King membina perisai glukosa keras dan meludah <b>Sugar Crystals</b>! Elak serpihan gula atau anda tersangkut dalam sirap pekat!"
+          : "<b>Amaran Peringkat Akhir:</b> Serangan bertubi-tubi air gula pekat! Terus pantas melangkah dan dapatkan Apple untuk menang!";
         UI.btn.textContent = `PROSES KE LEVEL ${runtime.currentLevel}`;
         UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
         UI.overlay.style.display = 'flex';
       }, 1000);
     } else {
       setTimeout(() => {
-        UI.title.textContent = "🏆 TAHNIAH! RAJA SLIME TUMBANG!";
+        UI.title.textContent = "🏆 TAHNIAH! RAJA GULA TUMBANG!";
         UI.safety.style.display = 'none';
-        UI.desc.textContent = "Anda berjaya menewaskan Slime King dan menamatkan kesemua 3 fasa senaman kembara!";
+        UI.desc.textContent = "Anda berjaya menewaskan Sugar King dan menghancurkan kalori jahat menerusi senaman anda!";
         UI.btn.textContent = "MAIN SEMULA KEMPEN";
         runtime.currentLevel = 1;
         UI.badge.textContent = `LEVEL 1`;
@@ -737,7 +704,7 @@
   function simulateHardwareDown(e) {
     testKeys[e.code] = true;
     if (e.code === 'ShiftLeft' || e.code === 'Space') {
-      let simulatedGain = runtime.isStuckInSlime ? 0.7 : 2.0; // Puddle dampening layout simulation
+      let simulatedGain = runtime.isStuckInSyrup ? 0.7 : 2.0;
       runtime.currentSpeed = Math.min(runtime.currentSpeed + simulatedGain, SETTINGS.velocityCap);
     }
     if (e.code === 'KeyE') processCombatStrike();
