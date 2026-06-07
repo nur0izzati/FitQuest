@@ -12,7 +12,7 @@
       --powerup: #ffea00;
       --sugar-white: #ffffff;
       --bg: #0d0e12;
-      --panel: rgba(22, 24, 33, 0.9);
+      --panel: rgba(22, 24, 33, 0.95);
     }
 
     * {
@@ -51,7 +51,7 @@
       justify-content: center;
       align-items: center;
       z-index: 100;
-      padding: 30px;
+      padding: 20px;
       text-align: center;
     }
 
@@ -59,9 +59,35 @@
       background: rgba(255, 51, 51, 0.1);
       border: 2px dashed var(--danger);
       border-radius: 12px;
+      padding: 12px;
+      margin: 15px 0;
+      max-width: 340px;
+    }
+
+    .how-to-play-box {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
       padding: 15px;
-      margin: 20px 0;
-      max-width: 320px;
+      margin-bottom: 20px;
+      max-width: 340px;
+      text-align: left;
+    }
+
+    .how-to-play-box h3 {
+      margin: 0 0 8px 0;
+      color: #00e5ff;
+      font-size: 1rem;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .how-to-play-box ul {
+      margin: 0;
+      padding-left: 20px;
+      color: #d1d5db;
+      font-size: 0.85rem;
+      line-height: 1.4;
     }
 
     .cta-btn {
@@ -92,28 +118,27 @@
     }
 
     #enemy {
-        position: absolute;
-        width: 120px;
-        height: 120px;
-        background-image: url('assets/sugar-cube.png'); /* ENEMY: Changed back to Sugar Cube */
-        background-repeat: no-repeat;
-        background-size: contain;
-        background-position: bottom center;
-        image-rendering: pixelated;
-        image-rendering: crisp-edges;
-        z-index: 5;
-        transform-origin: bottom center;
-        transition: width 0.3s, height 0.3s;
-        animation: enemyIdleAnimation 1.4s infinite alternate ease-in-out;
-      }
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      background-image: url('assets/sugar-cube.png');
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: bottom center;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      z-index: 5;
+      transform-origin: bottom center;
+      transition: width 0.3s, height 0.3s;
+      animation: enemyIdleAnimation 1.4s infinite alternate ease-in-out;
+    }
 
-    /* --- SUGAR PROJECTILE AND SYRUP PUDDLE STYLES --- */
     .sugar-glob {
       position: absolute;
       width: 24px;
       height: 24px;
       background: radial-gradient(circle, #ffffff 20%, #ffccd5 80%, transparent 100%);
-      border-radius: 4px; /* Blocky sugar crystal shape */
+      border-radius: 4px;
       box-shadow: 0 0 15px var(--sugar-white);
       z-index: 7;
     }
@@ -122,7 +147,7 @@
       position: absolute;
       width: 60px;
       height: 25px;
-      background: rgba(255, 182, 193, 0.5); /* Sticky pink syrup puddle */
+      background: rgba(255, 182, 193, 0.5);
       border-radius: 50%;
       box-shadow: 0 0 12px #ff6680;
       z-index: 4;
@@ -131,9 +156,9 @@
 
     #powerup-item {
       position: absolute;
-      width: 50px;
-      height: 50px;
-      background-image: url('assets/apple.png'); /* POWER-UP: Apple */
+      width: 50px; /* CHANGED: Increased to 50px */
+      height: 50px; /* CHANGED: Increased to 50px */
+      background-image: url('assets/apple.png');
       background-repeat: no-repeat;
       background-size: contain;
       background-position: center;
@@ -199,6 +224,7 @@
       padding: 15px;
       text-align: center;
       backdrop-filter: blur(12px);
+      margin-bottom: 35px; /* CHANGED: Added margin bottom to raise it higher on phone screens */
     }
 
     #status-msg { font-size: 1.05rem; font-weight: bold; color: #00e5ff; margin-bottom: 4px; height: 24px; }
@@ -206,7 +232,7 @@
 
     #joy-boundary {
       position: absolute;
-      bottom: 140px;
+      bottom: 175px; /* CHANGED: Shifted slightly up to avoid overlapping the raised deck */
       left: 35px;
       width: 120px;
       height: 120px;
@@ -232,20 +258,29 @@
 <body>
 
 <div id="game-container">
+  <!-- START MENU / OVERLAY -->
   <div id="overlay">
     <h1 id="menu-title">FITQUEST: SUGAR KING</h1>
     
+    <!-- CHANGED: Fully English Instructions Guide -->
+    <div class="how-to-play-box">
+      <h3>🏃‍♂️ How To Play</h3>
+      <ul>
+        <li><b>Aim/Direction:</b> Drag the virtual joystick on the screen to direct your hero.</li>
+        <li><b>Move/Run:</b> Jog or run physically on the spot while holding your phone to make the character move.</li>
+        <li><b>Attack:</b> Get close to the Sugar King and <b>shake your phone</b> firmly to strike!</li>
+        <li><i>(PC Testing: Use WASD/Arrows to aim, hold Space/Shift to run, and press E to attack)</i></li>
+      </ul>
+    </div>
+
     <div class="safety-warning-box" id="safety-box">
-      <b style="color: var(--danger); text-transform: uppercase; font-size: 0.9rem;">⚠️ KESELAMATAN / SAFETY WARNING:</b>
+      <b style="color: var(--danger); text-transform: uppercase; font-size: 0.9rem;">⚠️ Safety Warning:</b>
       <p style="color: #d1d5db; margin: 8px 0 0 0; font-size: 0.82rem; line-height: 1.4;">
-        Sila pastikan kawasan sekeliling anda lapang. <b>JANGAN</b> bermain di tepi longkang, jalan raya, atau tempat sempit yang boleh menyebabkan tersandung!
+        Please make sure your real-world surroundings are entirely clear. <b>DO NOT</b> play near roads, steps, or tight spaces that could cause you to trip or fall!
       </p>
     </div>
 
-    <p id="menu-desc" style="color: #7e8494; margin-bottom: 25px; max-width: 290px; font-size: 0.9rem;">
-      Gunakan joystick untuk haluan. Jog/berlari setempat untuk menggerakkan watak piksel anda!
-    </p>
-    <button class="cta-btn" id="action-btn" onclick="igniteEngine()">MULA KEMPEN</button>
+    <button class="cta-btn" id="action-btn" onclick="igniteEngine()">START CAMPAIGN</button>
   </div>
 
   <div id="player"></div>
@@ -269,9 +304,10 @@
       </div>
     </div>
 
+    <!-- CHANGED: This entire panel is raised higher via margin-bottom -->
     <div class="control-deck">
-      <div id="status-msg">Sedia untuk beraksi...</div>
-      <div class="exercise-metrics" id="motion-display">Kadar Langkah: 0.00 | Status: Pegun</div>
+      <div id="status-msg">Ready for action...</div>
+      <div class="exercise-metrics" id="motion-display">Step Rate: 0.00 | Status: Idle</div>
     </div>
   </div>
 </div>
@@ -314,7 +350,6 @@
     overlay: document.getElementById('overlay'),
     title: document.getElementById('menu-title'),
     safety: document.getElementById('safety-box'),
-    desc: document.getElementById('menu-desc'),
     btn: document.getElementById('action-btn'),
     badge: document.getElementById('level-badge'),
     player: document.getElementById('player'),
@@ -399,14 +434,14 @@
     const horizontalMargin = window.innerWidth * 0.2;
     const verticalMargin = window.innerHeight * 0.2;
     
-    runtime.powerX = horizontalMargin + Math.random() * (window.innerWidth - horizontalMargin * 2 - 40);
-    runtime.powerY = verticalMargin + Math.random() * (window.innerHeight - verticalMargin * 2 - 40);
+    runtime.powerX = horizontalMargin + Math.random() * (window.innerWidth - horizontalMargin * 2 - 50);
+    runtime.powerY = verticalMargin + Math.random() * (window.innerHeight - verticalMargin * 2 - 50);
 
     UI.power.style.left = `${runtime.powerX}px`;
     UI.power.style.top = `${runtime.powerY}px`;
     UI.power.style.display = 'block';
     
-    UI.status.textContent = "🍏 Apple Boost muncul! Ambil cepat untuk memecah perisai gula!";
+    UI.status.textContent = "🍏 Apple Spawned! Grab it quick to break the sugar shield!";
     UI.status.style.color = "var(--powerup)";
   }
 
@@ -466,7 +501,7 @@
         workYield *= SETTINGS.stickySlowFactor;
       }
       runtime.currentSpeed = Math.min(runtime.currentSpeed + workYield, SETTINGS.velocityCap);
-      UI.motionInfo.textContent = `Langkah: ${totalMagnitude.toFixed(1)} | ${runtime.isStuckInSyrup ? 'LEKAS! TERSEKAT AIR GULA' : 'Bergerak'}`;
+      UI.motionInfo.textContent = `Steps: ${totalMagnitude.toFixed(1)} | ${runtime.isStuckInSyrup ? 'STUCK IN SYRUP (Run Faster!)' : 'Moving'}`;
     }
 
     if (totalMagnitude > SETTINGS.shakeCutoff) processCombatStrike();
@@ -501,15 +536,15 @@
     processSugarHazards();
 
     if (runtime.powerSpawned && !runtime.hasPowerUpBoost) {
-      let dx = (runtime.pX + 50) - (runtime.powerX + 20);
-      let dy = (runtime.pY + 50) - (runtime.powerY + 20);
+      let dx = (runtime.pX + 50) - (runtime.powerX + 25);
+      let dy = (runtime.pY + 50) - (runtime.powerY + 25);
       let pDist = Math.sqrt(dx*dx + dy*dy);
       
-      if (pDist < 55) {
+      if (pDist < 60) {
         runtime.hasPowerUpBoost = true;
         UI.power.style.display = 'none';
         UI.player.style.filter = 'drop-shadow(0px 0px 10px #ffea00) brightness(1.2)';
-        UI.status.textContent = `🍏 VITAMIN APPLE! Perisai gula pecah, serang sekarang!`;
+        UI.status.textContent = `🍏 VITAMIN POWERUP! Shield broken, strike now!`;
         UI.status.style.color = 'var(--powerup)';
       }
     }
@@ -565,7 +600,7 @@
         UI.pFill.style.width = `${runtime.pHP}%`;
         UI.player.classList.remove('hurt-flash'); void UI.player.offsetWidth; UI.player.classList.add('hurt-flash');
         
-        UI.status.textContent = `💥 Sugar Crash! Terkena tembakan kristal gula!`;
+        UI.status.textContent = `💥 Sugar Crash! Hit by flying sugar crystal!`;
         UI.status.style.color = "var(--danger)";
 
         if (runtime.pHP <= 0) triggerGameOverScreen();
@@ -590,7 +625,7 @@
         UI.player.style.filter = runtime.hasPowerUpBoost 
           ? 'drop-shadow(0px 0px 10px #ffea00) sepia(0.5) hue-rotate(330deg)'
           : 'sepia(0.6) hue-rotate(330deg) brightness(0.9)';
-        UI.status.textContent = `⚠️ Tersekat dalam air gula pekat! Lari lebih pantas!`;
+        UI.status.textContent = `⚠️ Stuck in sticky syrup! Run faster to break free!`;
         UI.status.style.color = "#ffaa00";
       } else {
         UI.player.style.filter = runtime.hasPowerUpBoost 
@@ -621,9 +656,20 @@
   function triggerGameOverScreen() {
     runtime.halted = true;
     clearAllSugarHazards();
-    UI.title.textContent = "💥 KEMPEN GAGAL!";
-    UI.desc.textContent = "Tenaga Hero anda telah diserap habis oleh Sugar King! Jom jog semula untuk cuba lagi.";
-    UI.btn.textContent = "CUBA LAGI LEVEL INI";
+    UI.title.textContent = "💥 CAMPAIGN FAILED!";
+    UI.status.textContent = "Defeated...";
+    UI.overlay.querySelector('.how-to-play-box').style.display = 'none'; // Hide details on retry
+    UI.overlay.querySelector('.safety-warning-box').style.display = 'block';
+    UI.overlay.querySelector('p')?.remove(); 
+    
+    let retryDesc = document.createElement('p');
+    retryDesc.id = 'menu-desc';
+    retryDesc.style.color = '#7e8494';
+    retryDesc.style.marginBottom = '25px';
+    retryDesc.textContent = "Your energy was completely drained by the Sugar King! Let's jog it out and try again.";
+    UI.overlay.insertBefore(retryDesc, UI.btn);
+
+    UI.btn.textContent = "RETRY THIS LEVEL";
     UI.overlay.style.display = 'flex';
   }
 
@@ -649,7 +695,7 @@
     
     if (distanceVector <= SETTINGS.hitBoxRange + (eWidth/2)) {
       if (runtime.currentLevel >= 2 && !runtime.hasPowerUpBoost) {
-        UI.status.textContent = "🛡️ Kebal! Perisai gula melindunginya. Cari Apple dahulu!";
+        UI.status.textContent = "🛡️ Immune! Glucose armor protects him. Collect an Apple first!";
         UI.status.style.color = "var(--danger)";
         return;
       }
@@ -661,12 +707,12 @@
       UI.enemy.classList.remove('hurt-flash'); void UI.enemy.offsetWidth; UI.enemy.classList.add('hurt-flash');
       
       updateSugarBossScale();
-      UI.status.textContent = `💥 PUKULAN! Saiz Sugar Cube Mengecil! HP Boss: ${runtime.eHP}%`;
+      UI.status.textContent = `💥 HIT! Sugar Cube is shrinking! Boss HP: ${runtime.eHP}%`;
       UI.status.style.color = "var(--primary)";
 
       if (runtime.eHP <= 0) progressCampaignLevel();
     } else {
-      UI.status.textContent = "❌ Terlalu jauh! Dekati Sugar King sambil berlari!";
+      UI.status.textContent = "❌ Too far away! Jog closer to the Sugar King to strike!";
     }
   }
 
@@ -675,24 +721,37 @@
     clearAllSugarHazards();
     window.removeEventListener('devicemotion', evaluateDeviceSensors);
 
+    UI.overlay.querySelector('.how-to-play-box').style.display = 'none';
+    UI.overlay.querySelector('.safety-warning-box').style.display = 'none';
+    UI.overlay.querySelectorAll('p').forEach(p => p.remove());
+
+    let levelDesc = document.createElement('p');
+    levelDesc.style.color = '#d1d5db';
+    levelDesc.style.fontSize = '0.95rem';
+    levelDesc.style.maxWidth = '320px';
+    levelDesc.style.lineHeight = '1.5';
+    levelDesc.style.marginBottom = '25px';
+
     if (runtime.currentLevel < 3) {
       runtime.currentLevel++;
       setTimeout(() => {
-        UI.title.textContent = `LEVEL ${runtime.currentLevel} BERMULA!`;
-        UI.safety.style.display = 'none'; 
-        UI.desc.innerHTML = runtime.currentLevel === 2 
-          ? "<b>Amaran Level 2:</b> Sugar King membina perisai glukosa keras dan meludah <b>Sugar Crystals</b>! Elak serpihan gula atau anda tersangkut dalam sirap pekat!"
-          : "<b>Amaran Peringkat Akhir:</b> Serangan bertubi-tubi air gula pekat! Terus pantas melangkah dan dapatkan Apple untuk menang!";
-        UI.btn.textContent = `PROSES KE LEVEL ${runtime.currentLevel}`;
+        UI.title.textContent = `LEVEL ${runtime.currentLevel} STARTING!`;
+        levelDesc.innerHTML = runtime.currentLevel === 2 
+          ? "<b>Level 2 Alert:</b> Sugar King is building a hard glucose shield and spitting <b>Sugar Crystals</b>! Dodge them or get caught in sticky puddles!"
+          : "<b>Final Stage Alert:</b> Syrup spitting speed is maximized! Keep stepping fast to outrun traps and find your Apple!";
+        
+        UI.overlay.insertBefore(levelDesc, UI.btn);
+        UI.btn.textContent = `PROCEED TO LEVEL ${runtime.currentLevel}`;
         UI.badge.textContent = `LEVEL ${runtime.currentLevel}`;
         UI.overlay.style.display = 'flex';
       }, 1000);
     } else {
       setTimeout(() => {
-        UI.title.textContent = "🏆 TAHNIAH! RAJA GULA TUMBANG!";
-        UI.safety.style.display = 'none';
-        UI.desc.textContent = "Anda berjaya menewaskan Sugar King dan menghancurkan kalori jahat menerusi senaman anda!";
-        UI.btn.textContent = "MAIN SEMULA KEMPEN";
+        UI.title.textContent = "🏆 VICTORY! SUGAR KING DESTROYED!";
+        levelDesc.textContent = "Brilliant work! You destroyed the empty calories, survived the traps, and completed your full workout journey!";
+        
+        UI.overlay.insertBefore(levelDesc, UI.btn);
+        UI.btn.textContent = "REPLAY CAMPAIGN";
         runtime.currentLevel = 1;
         UI.badge.textContent = `LEVEL 1`;
         UI.overlay.style.display = 'flex';
