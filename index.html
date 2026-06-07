@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>FitQuest: Sugar King Campaign</title>
+  <title>FitQuest</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
   <style>
@@ -90,6 +90,10 @@
       line-height: 1.4;
     }
 
+    .how-to-play-box li {
+      margin-bottom: 8px;
+    }
+
     .cta-btn {
       background: linear-gradient(135deg, #ff3366 0%, #b3002d 100%);
       border: none;
@@ -156,8 +160,8 @@
 
     #powerup-item {
       position: absolute;
-      width: 50px; /* CHANGED: Increased to 50px */
-      height: 50px; /* CHANGED: Increased to 50px */
+      width: 50px; 
+      height: 50px; 
       background-image: url('assets/apple.png');
       background-repeat: no-repeat;
       background-size: contain;
@@ -224,7 +228,7 @@
       padding: 15px;
       text-align: center;
       backdrop-filter: blur(12px);
-      margin-bottom: 35px; /* CHANGED: Added margin bottom to raise it higher on phone screens */
+      margin-bottom: 35px; 
     }
 
     #status-msg { font-size: 1.05rem; font-weight: bold; color: #00e5ff; margin-bottom: 4px; height: 24px; }
@@ -232,7 +236,7 @@
 
     #joy-boundary {
       position: absolute;
-      bottom: 175px; /* CHANGED: Shifted slightly up to avoid overlapping the raised deck */
+      bottom: 175px; 
       left: 35px;
       width: 120px;
       height: 120px;
@@ -260,16 +264,16 @@
 <div id="game-container">
   <!-- START MENU / OVERLAY -->
   <div id="overlay">
-    <h1 id="menu-title">FITQUEST: SUGAR KING</h1>
+    <!-- CHANGED: Rebranded simply to FitQuest -->
+    <h1 id="menu-title">FITQUEST</h1>
     
-    <!-- CHANGED: Fully English Instructions Guide -->
+    <!-- CHANGED: Improved, clear mobile-only exercise mechanics instruction -->
     <div class="how-to-play-box">
       <h3>🏃‍♂️ How To Play</h3>
       <ul>
-        <li><b>Aim/Direction:</b> Drag the virtual joystick on the screen to direct your hero.</li>
-        <li><b>Move/Run:</b> Jog or run physically on the spot while holding your phone to make the character move.</li>
-        <li><b>Attack:</b> Get close to the Sugar King and <b>shake your phone</b> firmly to strike!</li>
-        <li><i>(PC Testing: Use WASD/Arrows to aim, hold Space/Shift to run, and press E to attack)</i></li>
+        <li><b>Step 1 (Aim):</b> Hold and drag the virtual joystick on the screen to aim your character in a direction. <i>(Note: Joystick alone will not move you!)</i></li>
+        <li><b>Step 2 (Move):</b> While holding the joystick, physically **walk or jog on the spot** to make your character run forward.</li>
+        <li><b>Step 3 (Attack):</b> Get close to the Sugar King and firmly **shake your phone** to strike!</li>
       </ul>
     </div>
 
@@ -304,7 +308,6 @@
       </div>
     </div>
 
-    <!-- CHANGED: This entire panel is raised higher via margin-bottom -->
     <div class="control-deck">
       <div id="status-msg">Ready for action...</div>
       <div class="exercise-metrics" id="motion-display">Step Rate: 0.00 | Status: Idle</div>
@@ -658,7 +661,7 @@
     clearAllSugarHazards();
     UI.title.textContent = "💥 CAMPAIGN FAILED!";
     UI.status.textContent = "Defeated...";
-    UI.overlay.querySelector('.how-to-play-box').style.display = 'none'; // Hide details on retry
+    UI.overlay.querySelector('.how-to-play-box').style.display = 'none'; 
     UI.overlay.querySelector('.safety-warning-box').style.display = 'block';
     UI.overlay.querySelector('p')?.remove(); 
     
@@ -759,6 +762,7 @@
     }
   }
 
+  // Fallback keyboard triggers remain active inside script background for easy console/internal validation if needed
   let testKeys = {};
   function simulateHardwareDown(e) {
     testKeys[e.code] = true;
